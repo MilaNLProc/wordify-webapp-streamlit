@@ -1,0 +1,53 @@
+pytest==5.4.2
+pytest-cov==2.8.1
+sphinx==3.0.4
+black==19.10b0
+jupyterlab==2.1.4
+pandas==1.2.4
+jupytext==1.5.1
+nbval==0.9.6
+textacy==0.11.0
+streamlit==0.81.1
+spacy==3.0.6
+numpy==1.20.2
+scikit-learn==0.24.2
+xlrd==2.0.1
+openpyxl==3.0.7
+stqdm==0.0.3
+watchdog==2.1.0
+flake8
+
+# english
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.0.0/en_core_web_sm-3.0.0.tar.gz#egg=en_core_web_sm
+# italian
+https://github.com/explosion/spacy-models/releases/download/it_core_news_sm-3.0.0/it_core_news_sm-3.0.0.tar.gz#egg=it_core_news_sm
+# german
+https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.0.0/de_core_news_sm-3.0.0.tar.gz#egg=de_core_news_sm
+# spanish
+https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.0.0/es_core_news_sm-3.0.0.tar.gz#egg=es_core_news_sm
+# greek
+https://github.com/explosion/spacy-models/releases/download/el_core_news_sm-3.0.0/el_core_news_sm-3.0.0.tar.gz#egg=el_core_news_sm
+# dutch
+https://github.com/explosion/spacy-models/releases/download/nl_core_news_sm-3.0.0/nl_core_news_sm-3.0.0.tar.gz#egg=nl_core_news_sm
+# portuguese
+https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.0.0/pt_core_news_sm-3.0.0.tar.gz#egg=pt_core_news_sm
+# french
+https://github.com/explosion/spacy-models/releases/download/fr_core_news_sm-3.0.0/fr_core_news_sm-3.0.0.tar.gz#egg=fr_core_news_sm
+# chinese
+# https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.0.0/zh_core_web_sm-3.0.0.tar.gz#egg=zh_core_web_sm
+# danish
+https://github.com/explosion/spacy-models/releases/download/da_core_news_sm-3.0.0/da_core_news_sm-3.0.0.tar.gz#egg=da_core_news_sm
+# japanese
+# https://github.com/explosion/spacy-models/releases/download/ja_core_news_sm-3.0.0/ja_core_news_sm-3.0.0.tar.gz#egg=ja_core_news_sm
+# lithuanian
+https://github.com/explosion/spacy-models/releases/download/lt_core_news_sm-3.0.0/lt_core_news_sm-3.0.0.tar.gz#egg=lt_core_news_sm
+# norvegian
+https://github.com/explosion/spacy-models/releases/download/nb_core_news_sm-3.0.0/nb_core_news_sm-3.0.0.tar.gz#egg=nb_core_news_sm
+# polish
+https://github.com/explosion/spacy-models/releases/download/pl_core_news_sm-3.0.0/pl_core_news_sm-3.0.0.tar.gz#egg=pl_core_news_sm
+# romanian
+https://github.com/explosion/spacy-models/releases/download/ro_core_news_sm-3.0.0/ro_core_news_sm-3.0.0.tar.gz#egg=ro_core_news_sm
+# russian
+https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.0.0/ru_core_news_sm-3.0.0.tar.gz#egg=ru_core_news_sm
+# multi-language
+https://github.com/explosion/spacy-models/releases/download/xx_ent_wiki_sm-3.0.0/xx_ent_wiki_sm-3.0.0.tar.gz#egg=xx_ent_wiki_sm
