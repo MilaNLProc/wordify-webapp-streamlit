@@ -18,7 +18,7 @@ from stqdm import stqdm
 from textacy.preprocessing import make_pipeline, normalize, remove, replace
 
 from .configs import Languages, ModelConfigs, SupportedFiles
-
+import string
 stqdm.pandas()
 
 
@@ -27,13 +27,17 @@ def get_logo(path):
     return Image.open(path)
 
 
-# @st.cache(suppress_st_warning=True)
+# @st.cache(suppress_st_warning=True) 
+@st.cache(allow_output_mutation=True)
 def read_file(uploaded_file) -> pd.DataFrame:
 
     file_type = uploaded_file.name.split(".")[-1]
     if file_type in set(i.name for i in SupportedFiles):
         read_f = SupportedFiles[file_type].value[0]
-        return read_f(uploaded_file, dtype=str)
+        df = read_f(uploaded_file)
+        # remove any NA
+        df = df.dropna()
+        return df
 
     else:
         st.error("File type not supported")
@@ -155,16 +159,20 @@ def wordifier(X, y, X_names: List[str], y_names: List[str], configs=ModelConfigs
 
 # more [here](https://github.com/fastai/fastai/blob/master/fastai/text/core.py#L42)
 # and [here](https://textacy.readthedocs.io/en/latest/api_reference/preprocessing.html)
+_re_normalize_acronyms = re.compile("(?:[a-zA-Z]\.){2,}")
+def normalize_acronyms(t):
+    return _re_normalize_acronyms.sub(t.translate(str.maketrans("", "", string.punctuation)).upper(), t)
+
+_re_non_word = re.compile("\W")
+def remove_non_word(t):
+    return _re_non_word.sub(" ", t)
+
 _re_space = re.compile(" {2,}")
-
-
 def normalize_useless_spaces(t):
     return _re_space.sub(" ", t)
 
 
 _re_rep = re.compile(r"(\S)(\1{2,})")
-
-
 def normalize_repeating_chars(t):
     def _replace_rep(m):
         c, cc = m.groups()
@@ -174,8 +182,6 @@ def normalize_repeating_chars(t):
 
 
 _re_wrep = re.compile(r"(?:\s|^)(\w+)\s+((?:\1\s+)+)\1(\s|\W|$)")
-
-
 def normalize_repeating_words(t):
     def _replace_wrep(m):
         c, cc, e = m.groups()
@@ -248,18 +254,20 @@ class TextPreprocessor:
                 ("normalize_hyphenated_words", normalize.hyphenated_words),
                 ("normalize_quotation_marks", normalize.quotation_marks),
                 ("normalize_whitespace", normalize.whitespace),
-                ("remove_accents", remove.accents),
-                ("remove_brackets", remove.brackets),
-                ("remove_html_tags", remove.html_tags),
-                ("remove_punctuation", remove.punctuation),
+                ("replace_urls", replace.urls),
                 ("replace_currency_symbols", replace.currency_symbols),
                 ("replace_emails", replace.emails),
                 ("replace_emojis", replace.emojis),
                 ("replace_hashtags", replace.hashtags),
                 ("replace_numbers", replace.numbers),
                 ("replace_phone_numbers", replace.phone_numbers),
-                ("replace_urls", replace.urls),
                 ("replace_user_handles", replace.user_handles),
+                ("normalize_acronyms", normalize_acronyms),
+                ("remove_accents", remove.accents),
+                ("remove_brackets", remove.brackets),
+                ("remove_html_tags", remove.html_tags),
+                ("remove_punctuation", remove.punctuation),
+                ("remove_non_words", remove_non_word),
                 ("normalize_useless_spaces", normalize_useless_spaces),
                 ("normalize_repeating_chars", normalize_repeating_chars),
                 ("normalize_repeating_words", normalize_repeating_words),
@@ -286,15 +294,27 @@ class TextPreprocessor:
 
 def plot_labels_prop(data: pd.DataFrame, label_column: str):
 
-    source = data["label"].value_counts().reset_index().rename(columns={"index": "Labels", label_column: "Counts"})
+    unique_value_limit = 100
+    
+    if data[label_column].nunique() > unique_value_limit:
 
-    source["Proportions"] = ((source["Counts"] / source["Counts"].sum()).round(3) * 100).map("{:,.2f}".format) + "%"
+        st.warning(f"""
+        The column you selected has more than {unique_value_limit}. 
+        Are you sure it's the right column? If it is, please note that
+        this will impact __Wordify__ performance.
+        """)
+
+        return
+
+    source = data[label_column].value_counts().reset_index().rename(columns={"index": "Labels", label_column: "Counts"})
+    source["Props"] = source["Counts"] / source["Counts"].sum()
+    source["Proportions"] = (source["Props"].round(3) * 100).map("{:,.2f}".format) + "%"
 
     bars = (
         alt.Chart(source)
         .mark_bar()
         .encode(
-            x="Labels:O",
+            x=alt.X("Labels:O", sort="-y"),
             y="Counts:Q",
         )
     )
