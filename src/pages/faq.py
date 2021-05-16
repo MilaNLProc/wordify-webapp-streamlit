@@ -4,11 +4,25 @@ from src.configs import Languages
 
 def write(*args):
 
-    # ==== HPW IT WORKS ==== #
+    # ==== HOW IT WORKS ==== #
     with st.beta_container():
         st.markdown("")
         st.markdown("")
-        st.header("How it works")
+        st.markdown(
+            """
+            Wordify makes it easy to identify words that discriminate categories in textual data.
+
+            Let's explain Wordify with an example. Imagine you are thinking about having a glass
+            of wine :wine_glass: with your friends :man-man-girl-girl: and you have to buy a bottle.
+            You know you like `bold`, `woody` wine but are unsure which one to choose.
+            You wonder whether there are some words that describe each type of wine.
+            Since you are a researcher :female-scientist: :male-scientist:, you decide to approach
+            the problem scientifically :microscope:. That's where Wordify comes to the rescue!
+            """
+        )
+        st.markdown("")
+        st.markdown("")
+        st.header("Steps")
         st.subheader("Step 1 - Prepare your data")
         st.markdown(
             """

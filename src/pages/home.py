@@ -7,7 +7,6 @@ from src.utils import (
     plot_labels_prop,
     plot_nchars,
     plot_score,
-    get_logo,
     read_file,
 )
 import streamlit as st
@@ -15,6 +14,22 @@ import streamlit as st
 
 def write(session, uploaded_file):
 
+    st.markdown(
+        """
+        Hi! Welcome to __Wordify__. Start by uploading a file - CSV, XLSX (avoid Strict Open XML Spreadsheet format [here](https://stackoverflow.com/questions/62800822/openpyxl-cannot-read-strict-open-xml-spreadsheet-format-userwarning-file-conta)), 
+        or PARQUET are currently supported.
+
+        Once you have uploaded the file, __Wordify__ will show an interactive UI through which
+        you'll be able to interactively decide the text preprocessing steps, their order, and 
+        proceed to Wordify your text.
+
+        If you're ready, let's jump in:
+
+        :point_left: upload a file via the upload widget in the sidebar!
+
+        NOTE: whenever you want to reset everything, simply refresh the page
+        """
+    )
     if uploaded_file:
 
         # 1. READ FILE
@@ -41,7 +56,8 @@ def write(session, uploaded_file):
                 st.markdown("Select the column containing the label")
 
             if label_column:
-                st.altair_chart(plot_labels_prop(data, label_column), use_container_width=True)
+                plot = plot_labels_prop(data, label_column)
+                if plot: st.altair_chart(plot, use_container_width=True)
 
         with col3:
             text_column = st.selectbox("Select text column name", cols_options, index=0)
@@ -123,11 +139,13 @@ def write(session, uploaded_file):
             st.warning("Please select `label` and `text` columns")
 
         elif run_button and (label_column and text_column) and not session.process:
-            # data = data.head()
-            data[f"preprocessed_{text_column}"] = preprocessor.fit_transform(data[text_column]).values
 
-            inputs = encode(data[f"preprocessed_{text_column}"], data[label_column])
-            session.posdf, session.negdf = wordifier(**inputs)
+            with st.spinner("Process started"):
+                # data = data.head()
+                data[f"preprocessed_{text_column}"] = preprocessor.fit_transform(data[text_column]).values
+
+                inputs = encode(data[f"preprocessed_{text_column}"], data[label_column])
+                session.posdf, session.negdf = wordifier(**inputs)
             st.success("Wordified!")
 
             # session.posdf, session.negdf = process(data, text_column, label_column)
