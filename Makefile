@@ -22,7 +22,7 @@ help:
 dev: ARGS?=/bin/bash
 dev: DARGS?=-v "${CURDIR}":/var/dev
 dev: ## run a foreground container
-	docker run -it --rm $(DARGS) $(PROJECT) $(ARGS)
+	docker run -it --rm -p 8501:8501 $(DARGS) $(PROJECT):${BUILD_TAG} $(ARGS)
 
 
 notebook: ARGS?=jupyter lab
