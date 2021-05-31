@@ -45,7 +45,9 @@ def write(session, uploaded_file):
                 )
         with col2:
             cols_options = [""] + data.columns.tolist()
-            label_column = st.selectbox("Select label column name", cols_options, index=0)
+            label_column = st.selectbox(
+                "Select label column name", cols_options, index=0
+            )
             with st.beta_expander("Description"):
                 st.markdown("Select the column containing the labels.")
 
@@ -60,7 +62,9 @@ def write(session, uploaded_file):
                 st.markdown("Select the column containing the texts.")
 
             if text_column:
-                st.altair_chart(plot_nchars(data, text_column), use_container_width=True)
+                st.altair_chart(
+                    plot_nchars(data, text_column), use_container_width=True
+                )
 
         # ==== 2.1 CREATE UI FOR ADVANCED OPTIONS ==== #
         with st.beta_expander("Advanced options"):
@@ -151,7 +155,11 @@ def write(session, uploaded_file):
             sample_data[f"preprocessed_{text_column}"] = preprocessing_pipeline(
                 sample_data[text_column]
             ).values
-            st.table(sample_data.loc[:, [label_column, text_column, f"preprocessed_{text_column}"]])
+            st.table(
+                sample_data.loc[
+                    :, [label_column, text_column, f"preprocessed_{text_column}"]
+                ]
+            )
 
         # ==== 4. RUN ==== #
         run_button = st.button("Wordify!")
@@ -183,7 +191,9 @@ def write(session, uploaded_file):
             col1, col2, col3 = st.beta_columns([2, 3, 3])
 
             with col1:
-                label = st.selectbox("Select label", data[label_column].unique().tolist())
+                label = st.selectbox(
+                    "Select label", data[label_column].unique().tolist()
+                )
                 # # with col2:
                 # thres = st.slider(
                 #     "Select threshold",

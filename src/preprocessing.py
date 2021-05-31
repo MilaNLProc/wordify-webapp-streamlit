@@ -91,7 +91,9 @@ def normalize_repeating_words(t):
 class Lemmatizer:
     """Creates lemmatizer based on spacy"""
 
-    def __init__(self, language: str, remove_stop: bool = True, lemmatization: bool = True) -> None:
+    def __init__(
+        self, language: str, remove_stop: bool = True, lemmatization: bool = True
+    ) -> None:
         self.language = language
         self.nlp = spacy.load(
             Languages[language].value, exclude=["parser", "ner", "pos", "tok2vec"]
@@ -99,12 +101,16 @@ class Lemmatizer:
         self._lemmatizer_fn = self._get_lemmatization_fn(remove_stop, lemmatization)
         self.lemmatization = lemmatization
 
-    def _get_lemmatization_fn(self, remove_stop: bool, lemmatization: bool) -> Optional[Callable]:
+    def _get_lemmatization_fn(
+        self, remove_stop: bool, lemmatization: bool
+    ) -> Optional[Callable]:
         """Return the correct spacy Doc-level lemmatizer"""
         if remove_stop and lemmatization:
 
             def lemmatizer_fn(doc: spacy.tokens.doc.Doc) -> str:
-                return " ".join([t.lemma_ for t in doc if t.lemma_ != "-PRON-" and not t.is_stop])
+                return " ".join(
+                    [t.lemma_ for t in doc if t.lemma_ != "-PRON-" and not t.is_stop]
+                )
 
         elif remove_stop and not lemmatization:
 
@@ -136,7 +142,9 @@ class Lemmatizer:
 
 
 class PreprocessingPipeline:
-    def __init__(self, pre_steps: List[str], lemmatizer: Lemmatizer, post_steps: List[str]):
+    def __init__(
+        self, pre_steps: List[str], lemmatizer: Lemmatizer, post_steps: List[str]
+    ):
 
         # build pipeline
         self.pre_pipeline, self.lemmatizer, self.post_pipeline = self.make_pipeline(
@@ -146,10 +154,10 @@ class PreprocessingPipeline:
     def __call__(self, series: Series) -> Series:
         with st.spinner("Pre-lemmatization cleaning"):
             res = series.progress_map(self.pre_pipeline)
-        
+
         with st.spinner("Lemmatizing"):
             res = self.lemmatizer(series)
-        
+
         with st.spinner("Post-lemmatization cleaning"):
             res = series.progress_map(self.post_pipeline)
 
