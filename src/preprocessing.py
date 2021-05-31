@@ -121,7 +121,9 @@ class TextPreprocessor:
 
             def lemmatizer(doc: spacy.tokens.doc.Doc) -> str:
                 """Lemmatizes spacy Doc and removes stopwords"""
-                return " ".join([t.lemma_ for t in doc if t.lemma_ != "-PRON-" and not t.is_stop])
+                return " ".join(
+                    [t.lemma_ for t in doc if t.lemma_ != "-PRON-" and not t.is_stop]
+                )
 
         else:
 

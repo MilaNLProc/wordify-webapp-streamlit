@@ -1,7 +1,6 @@
 from src.configs import Languages
 from src.utils import (
     encode,
-    wordifier,
     download_button,
     TextPreprocessor,
     plot_labels_prop,
@@ -9,28 +8,33 @@ from src.utils import (
     plot_score,
     read_file,
 )
+from src.wordifier import wordifier
 import streamlit as st
 
 
 def write(session, uploaded_file):
 
-    st.markdown(
-        """
-        Hi! Welcome to __Wordify__. Start by uploading a file - CSV, XLSX (avoid Strict Open XML Spreadsheet format [here](https://stackoverflow.com/questions/62800822/openpyxl-cannot-read-strict-open-xml-spreadsheet-format-userwarning-file-conta)), 
-        or PARQUET are currently supported.
+    if not uploaded_file:
+        st.markdown(
+            """
+            Hi, welcome to __Wordify__! :rocket:
 
-        Once you have uploaded the file, __Wordify__ will show an interactive UI through which
-        you'll be able to interactively decide the text preprocessing steps, their order, and 
-        proceed to Wordify your text.
+            Start by uploading a file - CSV, XLSX (avoid Strict Open XML Spreadsheet format [here](https://stackoverflow.com/questions/62800822/openpyxl-cannot-read-strict-open-xml-spreadsheet-format-userwarning-file-conta)),
+            or PARQUET are currently supported.
 
-        If you're ready, let's jump in:
+            Once you have uploaded the file, __Wordify__ will show an interactive UI through which
+            you'll be able to interactively decide the text preprocessing steps, their order, and
+            proceed to Wordify your text.
 
-        :point_left: upload a file via the upload widget in the sidebar!
+            If you're ready, let's jump in:
 
-        NOTE: whenever you want to reset everything, simply refresh the page
-        """
-    )
-    if uploaded_file:
+            :point_left: upload a file via the upload widget in the sidebar!
+
+            NOTE: whenever you want to reset everything, simply refresh the page.
+            """
+        )
+
+    elif uploaded_file:
 
         # 1. READ FILE
         with st.spinner("Reading file"):
@@ -38,10 +42,6 @@ def write(session, uploaded_file):
             data = read_file(uploaded_file)
 
         # 2. CREATE UI TO SELECT COLUMNS
-        st.markdown("")
-        st.markdown("")
-        st.header("Process")
-
         col1, col2, col3 = st.beta_columns(3)
         with col1:
             language = st.selectbox("Select language", [i.name for i in Languages])
@@ -51,13 +51,16 @@ def write(session, uploaded_file):
                 )
         with col2:
             cols_options = [""] + data.columns.tolist()
-            label_column = st.selectbox("Select label column name", cols_options, index=0)
+            label_column = st.selectbox(
+                "Select label column name", cols_options, index=0
+            )
             with st.beta_expander("Description"):
                 st.markdown("Select the column containing the label")
 
             if label_column:
                 plot = plot_labels_prop(data, label_column)
-                if plot: st.altair_chart(plot, use_container_width=True)
+                if plot:
+                    st.altair_chart(plot, use_container_width=True)
 
         with col3:
             text_column = st.selectbox("Select text column name", cols_options, index=0)
@@ -65,7 +68,9 @@ def write(session, uploaded_file):
                 st.markdown("Select the column containing the text")
 
             if text_column:
-                st.altair_chart(plot_nchars(data, text_column), use_container_width=True)
+                st.altair_chart(
+                    plot_nchars(data, text_column), use_container_width=True
+                )
 
         with st.beta_expander("Advanced options"):
             # Lemmatization option
@@ -102,14 +107,18 @@ def write(session, uploaded_file):
                 format_func=lambda x: x.replace("_", " ").title(),
                 key=session.run_id,
             )
-            lemmatization_options = list(TextPreprocessor._lemmatization_options().keys())
+            lemmatization_options = list(
+                TextPreprocessor._lemmatization_options().keys()
+            )
             lemmatization_when = lemmatization_when_elem.selectbox(
                 "Select when lemmatization happens",
                 options=lemmatization_options,
                 index=0,
                 key=session.run_id,
             )
-            remove_stopwords = remove_stopwords_elem.checkbox("Remove stopwords", value=True, key=session.run_id)
+            remove_stopwords = remove_stopwords_elem.checkbox(
+                "Remove stopwords", value=True, key=session.run_id
+            )
 
         # Show sample checkbox
         col1, col2 = st.beta_columns([1, 2])
@@ -130,8 +139,14 @@ def write(session, uploaded_file):
 
         elif show_sample and (label_column and text_column):
             sample_data = data.sample(10)
-            sample_data[f"preprocessed_{text_column}"] = preprocessor.fit_transform(sample_data[text_column]).values
-            st.table(sample_data.loc[:, [label_column, text_column, f"preprocessed_{text_column}"]])
+            sample_data[f"preprocessed_{text_column}"] = preprocessor.fit_transform(
+                sample_data[text_column]
+            ).values
+            st.table(
+                sample_data.loc[
+                    :, [label_column, text_column, f"preprocessed_{text_column}"]
+                ]
+            )
 
         # 4. RUN
         run_button = st.button("Wordify!")
@@ -142,7 +157,9 @@ def write(session, uploaded_file):
 
             with st.spinner("Process started"):
                 # data = data.head()
-                data[f"preprocessed_{text_column}"] = preprocessor.fit_transform(data[text_column]).values
+                data[f"preprocessed_{text_column}"] = preprocessor.fit_transform(
+                    data[text_column]
+                ).values
 
                 inputs = encode(data[f"preprocessed_{text_column}"], data[label_column])
                 session.posdf, session.negdf = wordifier(**inputs)
@@ -161,7 +178,9 @@ def write(session, uploaded_file):
             col1, col2, col3 = st.beta_columns([2, 3, 3])
 
             with col1:
-                label = st.selectbox("Select label", data[label_column].unique().tolist())
+                label = st.selectbox(
+                    "Select label", data[label_column].unique().tolist()
+                )
                 # # with col2:
                 # thres = st.slider(
                 #     "Select threshold",
@@ -175,14 +194,28 @@ def write(session, uploaded_file):
 
             with col2:
                 st.subheader(f"Words __positively__ identifying label `{label}`")
-                st.write(session.posdf[session.posdf[label_column] == label].sort_values("score", ascending=False))
+                st.write(
+                    session.posdf[session.posdf[label_column] == label].sort_values(
+                        "score", ascending=False
+                    )
+                )
                 download_button(session.posdf, "positive_data")
                 if show_plots:
-                    st.altair_chart(plot_score(session.posdf, label_column, label), use_container_width=True)
+                    st.altair_chart(
+                        plot_score(session.posdf, label_column, label),
+                        use_container_width=True,
+                    )
 
             with col3:
                 st.subheader(f"Words __negatively__ identifying label `{label}`")
-                st.write(session.negdf[session.negdf[label_column] == label].sort_values("score", ascending=False))
+                st.write(
+                    session.negdf[session.negdf[label_column] == label].sort_values(
+                        "score", ascending=False
+                    )
+                )
                 download_button(session.negdf, "negative_data")
                 if show_plots:
-                    st.altair_chart(plot_score(session.negdf, label_column, label), use_container_width=True)
+                    st.altair_chart(
+                        plot_score(session.negdf, label_column, label),
+                        use_container_width=True,
+                    )

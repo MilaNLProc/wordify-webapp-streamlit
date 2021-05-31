@@ -16,7 +16,9 @@ st.set_page_config(
 )
 
 # session state
-session = session_state.get(process=False, run_id=0, posdf=None, negdf=None, uploaded_file_id=0)
+session = session_state.get(
+    process=False, run_id=0, posdf=None, negdf=None, uploaded_file_id=0
+)
 
 
 # ==== SIDEBAR ==== #
@@ -42,7 +44,9 @@ st.sidebar.markdown("")
 st.sidebar.markdown("")
 st.sidebar.header("Upload file")
 # with st.sidebar.beta_container():
-uploaded_file = st.sidebar.file_uploader("Select file", type=[i.name for i in SupportedFiles])
+uploaded_file = st.sidebar.file_uploader(
+    "Select file", type=[i.name for i in SupportedFiles]
+)
 
 
 # FOOTER
