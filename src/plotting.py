@@ -1,42 +1,9 @@
-import base64
 import altair as alt
 import pandas as pd
 import streamlit as st
-from PIL import Image
 from stqdm import stqdm
 
-from .configs import SupportedFiles
-
 stqdm.pandas()
-
-
-@st.cache
-def get_logo(path):
-    return Image.open(path)
-
-
-# @st.cache(suppress_st_warning=True)
-@st.cache(allow_output_mutation=True)
-def read_file(uploaded_file) -> pd.DataFrame:
-
-    file_type = uploaded_file.name.split(".")[-1]
-    if file_type in set(i.name for i in SupportedFiles):
-        read_f = SupportedFiles[file_type].value[0]
-        df = read_f(uploaded_file)
-        # remove any NA
-        df = df.dropna()
-        return df
-
-    else:
-        st.error("File type not supported")
-
-
-def download_button(dataframe: pd.DataFrame, name: str):
-    csv = dataframe.to_csv(index=False)
-    # some strings <-> bytes conversions necessary here
-    b64 = base64.b64encode(csv.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="{name}.csv">Download</a>'
-    st.write(href, unsafe_allow_html=True)
 
 
 def plot_labels_prop(data: pd.DataFrame, label_column: str):
@@ -47,10 +14,10 @@ def plot_labels_prop(data: pd.DataFrame, label_column: str):
 
         st.warning(
             f"""
-        The column you selected has more than {unique_value_limit}.
-        Are you sure it's the right column? If it is, please note that
-        this will impact __Wordify__ performance.
-        """
+            The column you selected has more than {unique_value_limit}.
+            Are you sure it's the right column? If it is, please note that
+            this will impact __Wordify__ performance.
+            """
         )
 
         return
