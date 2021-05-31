@@ -59,6 +59,7 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True,
 )
+st.sidebar.info("Something not working? Consider [filing an issue](https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new)")
 
 
 # ==== MAIN ==== #
