@@ -1,7 +1,7 @@
 import re
 import string
 from collections import OrderedDict
-from typing import Callable, Dict, List
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -86,75 +86,102 @@ def normalize_repeating_words(t):
 
     return _re_wrep.sub(_replace_wrep, t)
 
-# fmt: on
-class TextPreprocessor:
-    def __init__(
-        self,
-        language: str,
-        cleaning_steps: List[str],
-        lemmatizer_when: str = "last",
-        remove_stop: bool = True,
-    ) -> None:
 
-        # prepare lemmatizer
+# fmt: on
+class Lemmatizer:
+    """Creates lemmatizer based on spacy"""
+
+    def __init__(self, language: str, remove_stop: bool = True, lemmatization: bool = True) -> None:
         self.language = language
         self.nlp = spacy.load(
             Languages[language].value, exclude=["parser", "ner", "pos", "tok2vec"]
         )
-        self.lemmatizer_when = self._lemmatization_options().get(lemmatizer_when, None)
-        self.remove_stop = remove_stop
-        self._lemmatize = self._get_lemmatizer()
+        self._lemmatizer_fn = self._get_lemmatization_fn(remove_stop, lemmatization)
+        self.lemmatization = lemmatization
 
-        # prepare cleaning
-        self.cleaning_steps = [
-            self._cleaning_options()[step]
-            for step in cleaning_steps
-            if step in self._cleaning_options()
-        ]
-        self.cleaning_pipeline = (
-            make_pipeline(*self.cleaning_steps) if self.cleaning_steps else lambda x: x
-        )
-
-    def _get_lemmatizer(self) -> Callable:
+    def _get_lemmatization_fn(self, remove_stop: bool, lemmatization: bool) -> Optional[Callable]:
         """Return the correct spacy Doc-level lemmatizer"""
-        if self.remove_stop:
+        if remove_stop and lemmatization:
 
-            def lemmatizer(doc: spacy.tokens.doc.Doc) -> str:
-                """Lemmatizes spacy Doc and removes stopwords"""
-                return " ".join(
-                    [t.lemma_ for t in doc if t.lemma_ != "-PRON-" and not t.is_stop]
-                )
+            def lemmatizer_fn(doc: spacy.tokens.doc.Doc) -> str:
+                return " ".join([t.lemma_ for t in doc if t.lemma_ != "-PRON-" and not t.is_stop])
 
-        else:
+        elif remove_stop and not lemmatization:
 
-            def lemmatizer(doc: spacy.tokens.doc.Doc) -> str:
-                """Lemmatizes spacy Doc"""
+            def lemmatizer_fn(doc: spacy.tokens.doc.Doc) -> str:
+                return " ".join([t for t in doc if not t.is_stop])
+
+        elif lemmatization and not remove_stop:
+
+            def lemmatizer_fn(doc: spacy.tokens.doc.Doc) -> str:
                 return " ".join([t.lemma_ for t in doc if t.lemma_ != "-PRON-"])
 
-        return lemmatizer
+        else:
+            self.status = False
+            return
 
-    @staticmethod
-    def _lemmatization_options() -> Dict[str, str]:
-        return {
-            "Before preprocessing": "first",
-            "After preprocessing": "last",
-            "Never! Let's do it quick and dirty": None,
-        }
+        return lemmatizer_fn
 
-    def lemmatizer(self, series: pd.Series) -> pd.Series:
+    def __call__(self, series: Series) -> Series:
         """
         Apply spacy pipeline to transform string to spacy Doc and applies lemmatization
         """
         res = []
-        pbar = stqdm(total=len(series))
+        pbar = stqdm(total=len(series), desc="Lemmatizing")
         for doc in self.nlp.pipe(series, batch_size=500):
-            res.append(self._lemmatize(doc))
+            res.append(self._lemmatizer_fn(doc))
             pbar.update(1)
         pbar.close()
         return pd.Series(res)
 
+
+class PreprocessingPipeline:
+    def __init__(self, pre_steps: List[str], lemmatizer: Lemmatizer, post_steps: List[str]):
+
+        # build pipeline
+        self.pre_pipeline, self.lemmatizer, self.post_pipeline = self.make_pipeline(
+            pre_steps, lemmatizer, post_steps
+        )
+
+    def __call__(self, series: Series) -> Series:
+        with st.spinner("Pre-lemmatization cleaning"):
+            res = series.progress_map(self.pre_pipeline)
+        
+        with st.spinner("Lemmatizing"):
+            res = self.lemmatizer(series)
+        
+        with st.spinner("Post-lemmatization cleaning"):
+            res = series.progress_map(self.post_pipeline)
+
+        return res
+
+    def make_pipeline(
+        self, pre_steps: List[str], lemmatizer: Lemmatizer, post_steps: List[str]
+    ) -> Tuple[Callable]:
+
+        # pre-lemmatization steps
+        pre_steps = [
+            self.pipeline_components()[step]
+            for step in pre_steps
+            if step in self.pipeline_components()
+        ]
+        pre_steps = make_pipeline(*pre_steps) if pre_steps else lambda x: x
+
+        # lemmatization
+        lemmatizer = lemmatizer if lemmatizer.lemmatization else lambda x: x
+
+        # post lemmatization steps
+        post_steps = [
+            self.pipeline_components()[step]
+            for step in post_steps
+            if step in self.pipeline_components()
+        ]
+        post_steps = make_pipeline(*post_steps) if post_steps else lambda x: x
+
+        return pre_steps, lemmatizer, post_steps
+
     @staticmethod
-    def _cleaning_options():
+    def pipeline_components() -> "OrderedDict[str, Callable]":
         """Returns available cleaning steps in order"""
         return OrderedDict(
             [
@@ -184,19 +211,3 @@ class TextPreprocessor:
                 ("strip", lambda x: x.strip()),
             ]
         )
-
-    def fit_transform(self, series: pd.Series) -> Series:
-        """Applies text preprocessing"""
-
-        if self.lemmatizer_when == "first":
-            with st.spinner("Lemmatizing"):
-                series = self.lemmatizer(series)
-
-        with st.spinner("Cleaning"):
-            series = series.progress_map(self.cleaning_pipeline)
-
-        if self.lemmatizer_when == "last":
-            with st.spinner("Lemmatizing"):
-                series = self.lemmatizer(series)
-
-        return series
