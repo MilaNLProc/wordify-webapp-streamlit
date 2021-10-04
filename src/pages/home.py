@@ -108,7 +108,7 @@ def write(session, uploaded_file):
             pre_steps = pre_steps_elem.multiselect(
                 "Select pre-lemmatization preprocessing steps (ordered)",
                 options=steps_options,
-                default=steps_options[1:],
+                default=steps_options,
                 format_func=lambda x: x.replace("_", " ").title(),
                 key=session.run_id,
             )
@@ -146,6 +146,8 @@ def write(session, uploaded_file):
             post_steps=post_steps,
         )
 
+        print(preprocessing_pipeline.pre_steps)
+
         # ==== 3. PROVIDE FEEDBACK ON OPTIONS ==== #
         if show_sample and not (label_column and text_column):
             st.warning("Please select `label` and `text` columns")
@@ -155,6 +157,8 @@ def write(session, uploaded_file):
             sample_data[f"preprocessed_{text_column}"] = preprocessing_pipeline(
                 sample_data[text_column]
             ).values
+
+            print(sample_data)
             st.table(
                 sample_data.loc[
                     :, [label_column, text_column, f"preprocessed_{text_column}"]
@@ -173,6 +177,8 @@ def write(session, uploaded_file):
                 data[f"preprocessed_{text_column}"] = preprocessing_pipeline(
                     data[text_column]
                 ).values
+
+                print(data.head())
 
                 inputs = encode(data[f"preprocessed_{text_column}"], data[label_column])
                 session.posdf, session.negdf = wordifier(**inputs)

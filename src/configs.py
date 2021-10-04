@@ -33,4 +33,4 @@ class Languages(Enum):
 class SupportedFiles(Enum):
     xlsx = (lambda x: pd.read_excel(x, dtype=str),)
     csv = (lambda x: pd.read_csv(x, dtype=str),)
-    parquet = (lambda x: pd.read_parquet(x, dtype=str),)
+    parquet = (lambda x: pd.read_parquet(x),)

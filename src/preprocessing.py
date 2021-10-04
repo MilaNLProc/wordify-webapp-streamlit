@@ -115,7 +115,7 @@ class Lemmatizer:
         elif remove_stop and not lemmatization:
 
             def lemmatizer_fn(doc: spacy.tokens.doc.Doc) -> str:
-                return " ".join([t for t in doc if not t.is_stop])
+                return " ".join([t.text for t in doc if not t.is_stop])
 
         elif lemmatization and not remove_stop:
 
