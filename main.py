@@ -1,6 +1,6 @@
 import streamlit as st
 
-from src.components import about, faq, footer, form, presentation
+from src.components import faq, footer, form, presentation
 from src.utils import convert_df, get_logo, read_file
 
 # app configs
@@ -12,7 +12,7 @@ st.set_page_config(
     menu_items={
         "Get Help": "https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new",
         "Report a Bug": "https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new",
-        "About": about(),
+        "About": "By the __Wordify__ team.",
     },
 )
 

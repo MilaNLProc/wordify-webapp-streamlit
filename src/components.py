@@ -5,7 +5,6 @@ from src.preprocessing import PreprocessingPipeline
 from src.wordifier import input_transform, output_transform, wordifier
 
 
-@st.experimental_memo
 def form(df):
     with st.form("my_form"):
         col1, col2 = st.columns([1, 2])
@@ -87,6 +86,14 @@ def form(df):
             # prepare output
             with st.spinner("Step 4/4: Preparing outputs"):
                 new_df = output_transform(pos, neg)
+
+            # col1, col2, col3 = st.columns(3)
+            # with col1:
+            #     st.metric("Total number of words processed", 3, delta_color="normal")
+            # with col2:
+            #     st.metric("Texts processed", 3, delta_color="normal")
+            # with col3:
+            #     st.metric("Texts processed", 3, delta_color="normal")
 
             return new_df
 
@@ -242,10 +249,4 @@ def contacts():
 
 
     <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2798.949796165441!2d9.185730115812493!3d45.450667779100726!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4786c405ae6543c9%3A0xf2bb2313b36af88c!2sVia%20Guglielmo%20R%C3%B6ntgen%2C%201%2C%2020136%20Milano%20MI!5e0!3m2!1sit!2sit!4v1569325279433!5m2!1sit!2sit" frameborder="0" style="border:0; width: 100%; height: 312px;" allowfullscreen></iframe>
-    """
-
-
-def about():
-    return """
-    The wordify team
     """

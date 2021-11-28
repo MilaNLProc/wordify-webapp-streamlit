@@ -13,7 +13,7 @@ def get_logo(path):
     return Image.open(path)
 
 
-@st.cache(allow_output_mutation=True)
+@st.experimental_memo
 def read_file(uploaded_file) -> pd.DataFrame:
     file_type = uploaded_file.name.split(".")[-1]
     read_fn = SupportedFiles[file_type].value[0]
