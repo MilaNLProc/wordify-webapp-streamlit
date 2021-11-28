@@ -1,12 +1,9 @@
 import streamlit as st
-from src.utils import get_logo
+
 from src import session_state
-from src.pages import (
-    home,
-    faq,
-    about,
-)
 from src.configs import SupportedFiles
+from src.pages import about, faq, home
+from src.utils import get_logo
 
 # app configs
 st.set_page_config(
@@ -59,7 +56,9 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True,
 )
-st.sidebar.info("Something not working? Consider [filing an issue](https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new)")
+st.sidebar.info(
+    "Something not working? Consider [filing an issue](https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new)"
+)
 
 
 # ==== MAIN ==== #

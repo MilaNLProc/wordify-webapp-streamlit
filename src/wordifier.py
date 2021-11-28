@@ -12,7 +12,9 @@ from sklearn.utils import resample
 from .configs import InputTransformConfigs, ModelConfigs
 
 
-def input_transform(text: pd.Series, labels: pd.Series, configs=InputTransformConfigs) -> Dict[str, np.ndarray]:
+def input_transform(
+    text: pd.Series, labels: pd.Series, configs=InputTransformConfigs
+) -> Dict[str, np.ndarray]:
     """
     Encodes text in mathematical object ameanable to training algorithm
     """
@@ -45,7 +47,11 @@ def input_transform(text: pd.Series, labels: pd.Series, configs=InputTransformCo
 
 
 def wordifier(
-    X: np.ndarray, y: np.ndarray, X_names: List[str], y_names: List[str], configs=ModelConfigs
+    X: np.ndarray,
+    y: np.ndarray,
+    X_names: List[str],
+    y_names: List[str],
+    configs=ModelConfigs,
 ) -> List[Tuple[str, float, str]]:
 
     n_instances, n_features = X.shape
@@ -85,7 +91,9 @@ def wordifier(
         )
 
         # sample indices to subsample matrix
-        selection = resample(np.arange(n_instances), replace=True, stratify=y, n_samples=sample_size)
+        selection = resample(
+            np.arange(n_instances), replace=True, stratify=y, n_samples=sample_size
+        )
 
         # fit
         try:
@@ -110,20 +118,36 @@ def wordifier(
     neg_scores = neg_scores / configs.NUM_ITERS.value
 
     # get only active features
-    pos_positions = np.where(pos_scores >= configs.SELECTION_THRESHOLD.value, pos_scores, 0)
-    neg_positions = np.where(neg_scores >= configs.SELECTION_THRESHOLD.value, neg_scores, 0)
+    pos_positions = np.where(
+        pos_scores >= configs.SELECTION_THRESHOLD.value, pos_scores, 0
+    )
+    neg_positions = np.where(
+        neg_scores >= configs.SELECTION_THRESHOLD.value, neg_scores, 0
+    )
 
     # prepare DataFrame
-    pos = [(X_names[i], pos_scores[c, i], y_names[c]) for c, i in zip(*pos_positions.nonzero())]
-    neg = [(X_names[i], neg_scores[c, i], y_names[c]) for c, i in zip(*neg_positions.nonzero())]
+    pos = [
+        (X_names[i], pos_scores[c, i], y_names[c])
+        for c, i in zip(*pos_positions.nonzero())
+    ]
+    neg = [
+        (X_names[i], neg_scores[c, i], y_names[c])
+        for c, i in zip(*neg_positions.nonzero())
+    ]
 
     return pos, neg
 
 
-def output_transform(pos: List[Tuple[str, float, str]], neg: List[Tuple[str, float, str]]) -> DataFrame:
-    posdf = pd.DataFrame(pos, columns="word score label".split()).sort_values(["label", "score"], ascending=False)
+def output_transform(
+    pos: List[Tuple[str, float, str]], neg: List[Tuple[str, float, str]]
+) -> DataFrame:
+    posdf = pd.DataFrame(pos, columns="word score label".split()).sort_values(
+        ["label", "score"], ascending=False
+    )
     posdf["correlation"] = "positive"
-    negdf = pd.DataFrame(neg, columns="word score label".split()).sort_values(["label", "score"], ascending=False)
+    negdf = pd.DataFrame(neg, columns="word score label".split()).sort_values(
+        ["label", "score"], ascending=False
+    )
     negdf["correlation"] = "negative"
 
     output = pd.concat([posdf, negdf], ignore_index=False, axis=0)

@@ -1,7 +1,8 @@
 import streamlit as st
+
+from src.configs import Languages, PreprocessingConfigs, SupportedFiles
 from src.preprocessing import PreprocessingPipeline
-from src.wordifier import input_transform, wordifier, output_transform
-from src.configs import PreprocessingConfigs, SupportedFiles, Languages
+from src.wordifier import input_transform, output_transform, wordifier
 
 
 @st.experimental_memo
@@ -12,10 +13,16 @@ def form(df):
 
             cols = [""] + df.columns.tolist()
             label_column = st.selectbox(
-                "Select label column", cols, index=0, help="Select the column containing the labels"
+                "Select label column",
+                cols,
+                index=0,
+                help="Select the column containing the labels",
             )
             text_column = st.selectbox(
-                "Select text column", cols, index=0, help="Select the column containing the text"
+                "Select text column",
+                cols,
+                index=0,
+                help="Select the column containing the text",
             )
             language = st.selectbox(
                 "Select language",
@@ -31,12 +38,16 @@ def form(df):
             pre_steps = st.multiselect(
                 "Select pre-lemmatization processing steps (ordered)",
                 options=steps_options,
-                default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value],
+                default=[
+                    steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value
+                ],
                 format_func=lambda x: x.replace("_", " ").title(),
                 help="Select the processing steps to apply before the text is lemmatized",
             )
 
-            lammatization_options = list(PreprocessingPipeline.lemmatization_component().keys())
+            lammatization_options = list(
+                PreprocessingPipeline.lemmatization_component().keys()
+            )
             lemmatization_step = st.selectbox(
                 "Select lemmatization",
                 options=lammatization_options,
@@ -47,7 +58,9 @@ def form(df):
             post_steps = st.multiselect(
                 "Select post-lemmatization processing steps (ordered)",
                 options=steps_options,
-                default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_POST.value],
+                default=[
+                    steps_options[i] for i in PreprocessingConfigs.DEFAULT_POST.value
+                ],
                 format_func=lambda x: x.replace("_", " ").title(),
                 help="Select the processing steps to apply after the text is lemmatized",
             )
@@ -58,7 +71,9 @@ def form(df):
 
             # preprocess
             with st.spinner("Step 1/4: Preprocessing text"):
-                pipe = PreprocessingPipeline(language, pre_steps, lemmatization_step, post_steps)
+                pipe = PreprocessingPipeline(
+                    language, pre_steps, lemmatization_step, post_steps
+                )
                 df = pipe.vaex_process(df, text_column)
 
             # prepare input
@@ -188,7 +203,10 @@ def presentation():
         """
     )
     st.table(
-        {"text": ["A review", "Another review", "Yet another one", "etc"], "label": ["Good", "Bad", "Good", "etc"]}
+        {
+            "text": ["A review", "Another review", "Yet another one", "etc"],
+            "label": ["Good", "Bad", "Good", "etc"],
+        }
     )
 
     st.subheader("Output format")
@@ -225,6 +243,7 @@ def contacts():
 
     <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2798.949796165441!2d9.185730115812493!3d45.450667779100726!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4786c405ae6543c9%3A0xf2bb2313b36af88c!2sVia%20Guglielmo%20R%C3%B6ntgen%2C%201%2C%2020136%20Milano%20MI!5e0!3m2!1sit!2sit!4v1569325279433!5m2!1sit!2sit" frameborder="0" style="border:0; width: 100%; height: 312px;" allowfullscreen></iframe>
     """
+
 
 def about():
     return """

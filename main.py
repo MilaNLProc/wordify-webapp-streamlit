@@ -1,7 +1,7 @@
 import streamlit as st
-from src.utils import get_logo, read_file, convert_df
-from src.components import form, faq, presentation, footer, about
 
+from src.components import about, faq, footer, form, presentation
+from src.utils import convert_df, get_logo, read_file
 
 # app configs
 st.set_page_config(
@@ -10,10 +10,10 @@ st.set_page_config(
     layout="centered",
     page_icon="./assets/logo.png",
     menu_items={
-        'Get Help': "https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new",
-        'Report a Bug': "https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new",
-        'About': about(),
-    }
+        "Get Help": "https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new",
+        "Report a Bug": "https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new",
+        "About": about(),
+    },
 )
 
 # logo

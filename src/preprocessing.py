@@ -6,10 +6,10 @@ from collections import OrderedDict
 from typing import Callable, List, Optional
 
 import pandas as pd
-from pandas.core.frame import DataFrame
 import spacy
 import streamlit as st
 import vaex
+from pandas.core.frame import DataFrame
 from pandas.core.series import Series
 from textacy.preprocessing import make_pipeline, normalize, remove, replace
 
@@ -103,7 +103,9 @@ class PreprocessingPipeline:
             return self.post(self.lemma(self.nlp(self.pre(t))))
 
         vdf = vaex.from_pandas(df)
-        vdf["processed_text"] = vdf.apply(fn, arguments=[vdf[text_column]], vectorize=False)
+        vdf["processed_text"] = vdf.apply(
+            fn, arguments=[vdf[text_column]], vectorize=False
+        )
 
         return vdf.to_pandas_df()
 
@@ -115,7 +117,9 @@ class PreprocessingPipeline:
             total_steps = len(series) // 100
             res = []
             pbar = st.progress(0)
-            for i, doc in enumerate(self.nlp.pipe(series, batch_size=500, n_process=os.cpu_count())):
+            for i, doc in enumerate(
+                self.nlp.pipe(series, batch_size=500, n_process=os.cpu_count())
+            ):
                 res.append(self.lemma(doc))
 
                 if i % total_steps == 0:
