@@ -3,11 +3,9 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 from PIL import Image
-from stqdm import stqdm
 
 from .configs import SupportedFiles
 
-stqdm.pandas()
 
 
 @st.cache
@@ -15,20 +13,19 @@ def get_logo(path):
     return Image.open(path)
 
 
-# @st.cache(suppress_st_warning=True)
 @st.cache(allow_output_mutation=True)
 def read_file(uploaded_file) -> pd.DataFrame:
-
     file_type = uploaded_file.name.split(".")[-1]
-    if file_type in set(i.name for i in SupportedFiles):
-        read_f = SupportedFiles[file_type].value[0]
-        df = read_f(uploaded_file)
-        # remove any NA
-        df = df.dropna()
-        return df
+    read_fn = SupportedFiles[file_type].value[0]
+    df = read_fn(uploaded_file)
+    df = df.dropna()
+    return df
 
-    else:
-        st.error("File type not supported")
+
+@st.cache
+def convert_df(df):
+    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+    return df.to_csv(index=False, sep=";").encode("utf-8")
 
 
 def download_button(dataframe: pd.DataFrame, name: str):
@@ -55,12 +52,7 @@ def plot_labels_prop(data: pd.DataFrame, label_column: str):
 
         return
 
-    source = (
-        data[label_column]
-        .value_counts()
-        .reset_index()
-        .rename(columns={"index": "Labels", label_column: "Counts"})
-    )
+    source = data[label_column].value_counts().reset_index().rename(columns={"index": "Labels", label_column: "Counts"})
     source["Props"] = source["Counts"] / source["Counts"].sum()
     source["Proportions"] = (source["Props"].round(3) * 100).map("{:,.2f}".format) + "%"
 
@@ -73,9 +65,7 @@ def plot_labels_prop(data: pd.DataFrame, label_column: str):
         )
     )
 
-    text = bars.mark_text(align="center", baseline="middle", dy=15).encode(
-        text="Proportions:O"
-    )
+    text = bars.mark_text(align="center", baseline="middle", dy=15).encode(text="Proportions:O")
 
     return (bars + text).properties(height=300)
 
@@ -87,9 +77,7 @@ def plot_nchars(data: pd.DataFrame, text_column: str):
         alt.Chart(source)
         .mark_bar()
         .encode(
-            alt.X(
-                f"{text_column}:Q", bin=True, axis=alt.Axis(title="# chars per text")
-            ),
+            alt.X(f"{text_column}:Q", bin=True, axis=alt.Axis(title="# chars per text")),
             alt.Y("count()", axis=alt.Axis(title="")),
         )
     )
@@ -99,11 +87,7 @@ def plot_nchars(data: pd.DataFrame, text_column: str):
 
 def plot_score(data: pd.DataFrame, label_col: str, label: str):
 
-    source = (
-        data.loc[data[label_col] == label]
-        .sort_values("score", ascending=False)
-        .head(100)
-    )
+    source = data.loc[data[label_col] == label].sort_values("score", ascending=False).head(100)
 
     plot = (
         alt.Chart(source)

@@ -10,6 +10,19 @@ class ModelConfigs(Enum):
     MIN_SELECTION = 10_000
 
 
+class InputTransformConfigs(Enum):
+    NGRAM_RANGE = (1, 3)
+    MIN_DF = 0.001
+    MAX_DF = 0.75
+    SUBLINEAR = True
+
+
+class PreprocessingConfigs(Enum):
+    DEFAULT_PRE = [1, 3, 5, 15, 21, 22, 18, 19, 0, 20, -1]
+    DEFAULT_LEMMA = 1
+    DEFAULT_POST = [20, -1]
+
+
 class Languages(Enum):
     English = "en_core_web_sm"
     Italian = "it_core_news_sm"

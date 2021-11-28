@@ -1,55 +1,19 @@
+import multiprocessing as mp
+import os
 import re
 import string
 from collections import OrderedDict
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional
 
-import numpy as np
 import pandas as pd
+from pandas.core.frame import DataFrame
 import spacy
 import streamlit as st
+import vaex
 from pandas.core.series import Series
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import LabelEncoder
-from stqdm import stqdm
 from textacy.preprocessing import make_pipeline, normalize, remove, replace
 
 from .configs import Languages
-
-stqdm.pandas()
-
-
-def encode(text: pd.Series, labels: pd.Series):
-    """
-    Encodes text in mathematical object ameanable to training algorithm
-    """
-    tfidf_vectorizer = TfidfVectorizer(
-        input="content",  # default: file already in memory
-        encoding="utf-8",  # default
-        decode_error="strict",  # default
-        strip_accents=None,  # do nothing
-        lowercase=False,  # do nothing
-        preprocessor=None,  # do nothing - default
-        tokenizer=None,  # default
-        stop_words=None,  # do nothing
-        analyzer="word",
-        ngram_range=(1, 3),  # maximum 3-ngrams
-        min_df=0.001,
-        max_df=0.75,
-        sublinear_tf=True,
-    )
-    label_encoder = LabelEncoder()
-
-    with st.spinner("Encoding text using TF-IDF and Encoding labels"):
-        X = tfidf_vectorizer.fit_transform(text.values)
-        y = label_encoder.fit_transform(labels.values)
-
-    return {
-        "X": X,
-        "y": y,
-        "X_names": np.array(tfidf_vectorizer.get_feature_names()),
-        "y_names": label_encoder.classes_,
-    }
-
 
 # more [here](https://github.com/fastai/fastai/blob/master/fastai/text/core.py#L42)
 # and [here](https://textacy.readthedocs.io/en/latest/api_reference/preprocessing.html)
@@ -87,118 +51,101 @@ def normalize_repeating_words(t):
     return _re_wrep.sub(_replace_wrep, t)
 
 
+def lowercase(t: str) -> str:
+    return t.lower()
+
+
+def strip(t: str) -> str:
+    return t.strip()
+
+
+def lemmatize_remove_stopwords(doc: spacy.tokens.doc.Doc) -> str:
+    return " ".join(
+        [t.lemma_ for t in doc if t.lemma_ != "-PRON-" and not t.is_stop]
+    )
+
+
+def remove_stopwords(doc: spacy.tokens.doc.Doc) -> str:
+    return " ".join([t.text for t in doc if not t.is_stop])
+
+
+def lemmatize_keep_stopwords(doc: spacy.tokens.doc.Doc) -> str:
+    return " ".join([t.lemma_ for t in doc if t.lemma_ != "-PRON-"])
+
+
 # fmt: on
-class Lemmatizer:
-    """Creates lemmatizer based on spacy"""
-
-    def __init__(
-        self, language: str, remove_stop: bool = True, lemmatization: bool = True
-    ) -> None:
-        self.language = language
-        self.nlp = spacy.load(
-            Languages[language].value, exclude=["parser", "ner", "pos", "tok2vec"]
-        )
-        self._lemmatizer_fn = self._get_lemmatization_fn(remove_stop, lemmatization)
-        self.lemmatization = lemmatization
-
-    def _get_lemmatization_fn(
-        self, remove_stop: bool, lemmatization: bool
-    ) -> Optional[Callable]:
-        """Return the correct spacy Doc-level lemmatizer"""
-        if remove_stop and lemmatization:
-
-            def lemmatizer_fn(doc: spacy.tokens.doc.Doc) -> str:
-                return " ".join(
-                    [t.lemma_ for t in doc if t.lemma_ != "-PRON-" and not t.is_stop]
-                )
-
-        elif remove_stop and not lemmatization:
-
-            def lemmatizer_fn(doc: spacy.tokens.doc.Doc) -> str:
-                return " ".join([t.text for t in doc if not t.is_stop])
-
-        elif lemmatization and not remove_stop:
-
-            def lemmatizer_fn(doc: spacy.tokens.doc.Doc) -> str:
-                return " ".join([t.lemma_ for t in doc if t.lemma_ != "-PRON-"])
-
-        else:
-            self.status = False
-            return
-
-        return lemmatizer_fn
-
-    def __call__(self, series: Series) -> Series:
-        """
-        Apply spacy pipeline to transform string to spacy Doc and applies lemmatization
-        """
-        res = []
-        pbar = stqdm(total=len(series), desc="Lemmatizing")
-        for doc in self.nlp.pipe(series, batch_size=500):
-            res.append(self._lemmatizer_fn(doc))
-            pbar.update(1)
-        pbar.close()
-        return pd.Series(res)
-
-
 class PreprocessingPipeline:
     def __init__(
-        self, pre_steps: List[str], lemmatizer: Lemmatizer, post_steps: List[str]
+        self,
+        language: str,
+        pre_steps: Optional[List[str]],
+        lemmatization_step: Optional[str],
+        post_steps: Optional[List[str]],
     ):
+        self.language = language
+        self.pre_steps = pre_steps
+        self.lemmatization_step = lemmatization_step
+        self.post_steps = post_steps
 
-        # build pipeline
-        self.pre_pipeline, self.lemmatizer, self.post_pipeline = self.make_pipeline(
-            pre_steps, lemmatizer, post_steps
-        )
+        self.nlp = spacy.load(Languages[language].value, disable=["parser", "ner"])
+        self.pre = self.make_pre_post_component(self.pre_steps)
+        self.post = self.make_pre_post_component(self.post_steps)
+        self.lemma = self.lemmatization_component()[self.lemmatization_step]
+
+    def apply_multiproc(fn, series):
+        with mp.Pool(mp.cpu_count()) as pool:
+            new_series = pool.map(fn, series)
+
+        return new_series
+
+    def vaex_process(self, df: DataFrame, text_column: str) -> DataFrame:
+        def fn(t):
+            return self.post(self.lemma(self.nlp(self.pre(t))))
+
+        vdf = vaex.from_pandas(df)
+        vdf["processed_text"] = vdf.apply(fn, arguments=[vdf[text_column]], vectorize=False)
+
+        return vdf.to_pandas_df()
 
     def __call__(self, series: Series) -> Series:
-        with st.spinner("Pre-lemmatization cleaning"):
-            res = series.progress_map(self.pre_pipeline)
+        if self.pre:
+            series = series.map(self.pre)
 
-        with st.spinner("Lemmatizing"):
-            res = self.lemmatizer(series)
+        if self.lemma:
+            total_steps = len(series) // 100
+            res = []
+            pbar = st.progress(0)
+            for i, doc in enumerate(self.nlp.pipe(series, batch_size=500, n_process=os.cpu_count())):
+                res.append(self.lemma(doc))
 
-        with st.spinner("Post-lemmatization cleaning"):
-            res = series.progress_map(self.post_pipeline)
+                if i % total_steps == 0:
+                    pbar.progress(1)
 
-        return res
+            series = pd.Series(res)
 
-    def make_pipeline(
-        self, pre_steps: List[str], lemmatizer: Lemmatizer, post_steps: List[str]
-    ) -> Tuple[Callable]:
+        if self.post:
+            series = series.map(self.post)
 
-        # pre-lemmatization steps
-        pre_steps = [
-            self.pipeline_components()[step]
-            for step in pre_steps
-            if step in self.pipeline_components()
-        ]
-        pre_steps = make_pipeline(*pre_steps) if pre_steps else lambda x: x
+        return series
 
-        # lemmatization
-        lemmatizer = lemmatizer if lemmatizer.lemmatization else lambda x: x
+    def make_pre_post_component(self, steps: Optional[List[str]]) -> Optional[Callable]:
+        if not steps:
+            return
+        components = [self.pipeline_components()[step] for step in steps]
 
-        # post lemmatization steps
-        post_steps = [
-            self.pipeline_components()[step]
-            for step in post_steps
-            if step in self.pipeline_components()
-        ]
-        post_steps = make_pipeline(*post_steps) if post_steps else lambda x: x
-
-        return pre_steps, lemmatizer, post_steps
+        return make_pipeline(*components)
 
     @staticmethod
     def pipeline_components() -> "OrderedDict[str, Callable]":
         """Returns available cleaning steps in order"""
         return OrderedDict(
             [
-                ("lower", lambda x: x.lower()),
+                ("lowercase", lowercase),
                 ("normalize_unicode", normalize.unicode),
                 ("normalize_bullet_points", normalize.bullet_points),
                 ("normalize_hyphenated_words", normalize.hyphenated_words),
                 ("normalize_quotation_marks", normalize.quotation_marks),
-                ("normalize_whitespace", normalize.whitespace),
+                ("normalize_whitespaces", normalize.whitespace),
                 ("replace_urls", replace.urls),
                 ("replace_currency_symbols", replace.currency_symbols),
                 ("replace_emails", replace.emails),
@@ -216,6 +163,17 @@ class PreprocessingPipeline:
                 ("normalize_useless_spaces", normalize_useless_spaces),
                 ("normalize_repeating_chars", normalize_repeating_chars),
                 ("normalize_repeating_words", normalize_repeating_words),
-                ("strip", lambda x: x.strip()),
+                ("strip", strip),
+            ]
+        )
+
+    @staticmethod
+    def lemmatization_component() -> "OrderedDict[str, Optional[Callable]]":
+        return OrderedDict(
+            [
+                ("Spacy lemmatizer (keep stopwords)", lemmatize_keep_stopwords),
+                ("Spacy lemmatizer (no stopwords)", lemmatize_remove_stopwords),
+                ("Disable lemmatizer", None),
+                ("Remove stopwords", remove_stopwords),
             ]
         )
