@@ -1,13 +1,11 @@
 import base64
+
 import altair as alt
 import pandas as pd
 import streamlit as st
 from PIL import Image
-from stqdm import stqdm
 
 from .configs import SupportedFiles
-
-stqdm.pandas()
 
 
 @st.cache
@@ -15,20 +13,19 @@ def get_logo(path):
     return Image.open(path)
 
 
-# @st.cache(suppress_st_warning=True)
-@st.cache(allow_output_mutation=True)
+@st.experimental_memo
 def read_file(uploaded_file) -> pd.DataFrame:
-
     file_type = uploaded_file.name.split(".")[-1]
-    if file_type in set(i.name for i in SupportedFiles):
-        read_f = SupportedFiles[file_type].value[0]
-        df = read_f(uploaded_file)
-        # remove any NA
-        df = df.dropna()
-        return df
+    read_fn = SupportedFiles[file_type].value[0]
+    df = read_fn(uploaded_file)
+    df = df.dropna()
+    return df
 
-    else:
-        st.error("File type not supported")
+
+@st.cache
+def convert_df(df):
+    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+    return df.to_csv(index=False, sep=";").encode("utf-8")
 
 
 def download_button(dataframe: pd.DataFrame, name: str):

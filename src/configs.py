@@ -1,4 +1,5 @@
 from enum import Enum
+
 import pandas as pd
 
 
@@ -8,6 +9,19 @@ class ModelConfigs(Enum):
     PENALTIES = [10, 5, 2, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0001, 0.00001]
     MAX_SELECTION = 100_000
     MIN_SELECTION = 10_000
+
+
+class InputTransformConfigs(Enum):
+    NGRAM_RANGE = (1, 3)
+    MIN_DF = 0.001
+    MAX_DF = 0.75
+    SUBLINEAR = True
+
+
+class PreprocessingConfigs(Enum):
+    DEFAULT_PRE = [1, 3, 5, 15, 21, 22, 18, 19, 0, 20, -1]
+    DEFAULT_LEMMA = 1
+    DEFAULT_POST = [20, -1]
 
 
 class Languages(Enum):
