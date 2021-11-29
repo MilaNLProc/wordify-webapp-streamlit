@@ -1,3 +1,14 @@
+---
+title: Wordify
+emoji: 🤗
+colorFrom: yellow
+colorTo: orange
+sdk: streamlit
+app_file: app.py
+pinned: false
+---
+
+
 # To run locally in Docker
 1. Clone this repo
 1. run `make build` to create image
