@@ -4,8 +4,8 @@
 
 FROM continuumio/miniconda3:4.8.2 AS main
 
-RUN apt-get -y update && \
-    apt-get -y install build-essential
+# RUN apt-get -y update && \
+#     apt-get -y install build-essential
 RUN conda update -n base -c defaults conda
 
 # chown changes owner from root owner (1000) to the first user inside the env (100)
@@ -16,7 +16,7 @@ RUN conda install --force-reinstall -y -q --name base pip
 COPY . /var/app/
 # WORKDIR /var/dev
 WORKDIR /var/app
-RUN pip install -r requirements.txt
+RUN pip install -r dev-requirements.txt
 CMD streamlit run ./app.py
 
 ###############################################################################

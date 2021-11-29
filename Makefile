@@ -3,7 +3,7 @@
 
 # Docker image build info
 PROJECT:=wordify
-BUILD_TAG?=v0.1.0-alpha
+BUILD_TAG?=v0.1
 
 ALL_IMAGES:=src
 
