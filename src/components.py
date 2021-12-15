@@ -125,9 +125,6 @@ def form(df):
             with st.spinner("Step 4/4: Preparing outputs"):
                 new_df = output_transform(pos, neg)
 
-            # reset the index for the UI
-            new_df = new_df.reset_index(drop=True)
-
             end_time = time.time()
             meta_data = {
                 "vocab_size": input_dict["X"].shape[1],
@@ -351,7 +348,7 @@ def analysis(outputs):
             value=0.25,
             help="To return everything, select 0.",
         )
-        subset_df = df.loc[df["Score"] >= threshold]
+        subset_df = df.loc[df["Score"] >= threshold].reset_index(drop=True)
         st.write(subset_df)
 
     with col2:
