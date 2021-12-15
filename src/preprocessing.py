@@ -75,6 +75,10 @@ def lemmatize_keep_stopwords(doc: spacy.tokens.doc.Doc) -> str:
     return " ".join([t.lemma_ for t in doc if t.lemma_ != "-PRON-"])
 
 
+def identity(t):
+    return t
+
+
 # fmt: on
 class PreprocessingPipeline:
     def __init__(
@@ -90,8 +94,14 @@ class PreprocessingPipeline:
         self.post_steps = post_steps
 
         self.nlp = spacy.load(Languages[language].value, disable=["parser", "ner"])
-        self.pre = self.make_pre_post_component(self.pre_steps)
-        self.post = self.make_pre_post_component(self.post_steps)
+        self.pre = (
+            self.make_pre_post_component(self.pre_steps) if self.pre_steps else identity
+        )
+        self.post = (
+            self.make_pre_post_component(self.post_steps)
+            if self.post_steps
+            else identity
+        )
         self.lemma = self.lemmatization_component()[self.lemmatization_step]
 
     # def apply_multiproc(fn, series):
@@ -111,28 +121,28 @@ class PreprocessingPipeline:
 
         return df
 
-    def __call__(self, series: Series) -> Series:
-        if self.pre:
-            series = series.map(self.pre)
+    # def __call__(self, series: Series) -> Series:
+    #     if self.pre:
+    #         series = series.map(self.pre)
 
-        if self.lemma:
-            total_steps = len(series) // 100
-            res = []
-            pbar = st.progress(0)
-            for i, doc in enumerate(
-                self.nlp.pipe(series, batch_size=500, n_process=os.cpu_count())
-            ):
-                res.append(self.lemma(doc))
+    #     if self.lemma:
+    #         total_steps = len(series) // 100
+    #         res = []
+    #         pbar = st.progress(0)
+    #         for i, doc in enumerate(
+    #             self.nlp.pipe(series, batch_size=500, n_process=os.cpu_count())
+    #         ):
+    #             res.append(self.lemma(doc))
 
-                if i % total_steps == 0:
-                    pbar.progress(1)
+    #             if i % total_steps == 0:
+    #                 pbar.progress(1)
 
-            series = pd.Series(res)
+    #         series = pd.Series(res)
 
-        if self.post:
-            series = series.map(self.post)
+    #     if self.post:
+    #         series = series.map(self.post)
 
-        return series
+    #     return series
 
     def make_pre_post_component(self, steps: Optional[List[str]]) -> Optional[Callable]:
         if not steps:
@@ -179,7 +189,7 @@ class PreprocessingPipeline:
             [
                 ("Spacy lemmatizer (keep stopwords)", lemmatize_keep_stopwords),
                 ("Spacy lemmatizer (no stopwords)", lemmatize_remove_stopwords),
-                ("Disable lemmatizer", None),
+                ("Disable lemmatizer", identity),
                 ("Remove stopwords", remove_stopwords),
             ]
         )
