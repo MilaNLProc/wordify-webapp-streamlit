@@ -88,6 +88,7 @@ def wordifier(
             multi_class="auto",
             max_iter=500,
             class_weight="balanced",
+            random_state=42,
         )
 
         # sample indices to subsample matrix
