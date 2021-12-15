@@ -1,4 +1,6 @@
 import streamlit as st
+import time
+import pandas as pd
 
 from src.configs import Languages, PreprocessingConfigs, SupportedFiles
 from src.preprocessing import PreprocessingPipeline
@@ -7,6 +9,7 @@ from src.utils import get_col_indices
 
 
 def form(df):
+    st.subheader("Parameters")
     with st.form("Wordify form"):
         col1, col2, col3 = st.columns(3)
         cols = [""] + df.columns.tolist()
@@ -43,12 +46,16 @@ def form(df):
                 pre_steps = st.multiselect(
                     "Select pre-lemmatization processing steps (ordered)",
                     options=steps_options,
-                    default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value],
+                    default=[
+                        steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value
+                    ],
                     format_func=lambda x: x.replace("_", " ").title(),
                     help="Select the processing steps to apply before the text is lemmatized",
                 )
 
-                lammatization_options = list(PreprocessingPipeline.lemmatization_component().keys())
+                lammatization_options = list(
+                    PreprocessingPipeline.lemmatization_component().keys()
+                )
                 lemmatization_step = st.selectbox(
                     "Select lemmatization",
                     options=lammatization_options,
@@ -59,7 +66,10 @@ def form(df):
                 post_steps = st.multiselect(
                     "Select post-lemmatization processing steps (ordered)",
                     options=steps_options,
-                    default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_POST.value],
+                    default=[
+                        steps_options[i]
+                        for i in PreprocessingConfigs.DEFAULT_POST.value
+                    ],
                     format_func=lambda x: x.replace("_", " ").title(),
                     help="Select the processing steps to apply after the text is lemmatized",
                 )
@@ -68,12 +78,21 @@ def form(df):
         submitted = st.form_submit_button("Submit")
         if submitted:
 
+            start_time = time.time()
+
             # preprocess
             if not disable_preprocessing:
                 with st.spinner("Step 1/4: Preprocessing text"):
-                    pipe = PreprocessingPipeline(language, pre_steps, lemmatization_step, post_steps)
+                    pipe = PreprocessingPipeline(
+                        language, pre_steps, lemmatization_step, post_steps
+                    )
                     df = pipe.vaex_process(df, text_column)
-                
+            else:
+                with st.spinner(
+                    "Step 1/4: Preprocessing has been disabled - doing nothing"
+                ):
+                    time.sleep(1.5)
+
             # prepare input
             with st.spinner("Step 2/4: Preparing inputs"):
                 input_dict = input_transform(df[text_column], df[label_column])
@@ -86,7 +105,19 @@ def form(df):
             with st.spinner("Step 4/4: Preparing outputs"):
                 new_df = output_transform(pos, neg)
 
-            return new_df
+            # reset the index for the UI
+            new_df = new_df.reset_index(drop=True)
+
+            end_time = time.time()
+            meta_data = {
+                "vocab_size": input_dict["X"].shape[1],
+                "n_instances": input_dict["X"].shape[0],
+                "vocabulary": pd.DataFrame({"Vocabulary": input_dict["X_names"]}),
+                "labels": pd.DataFrame({"Labels": input_dict["y_names"]}),
+                "time": round(end_time - start_time),
+            }
+
+            return new_df, meta_data
 
 
 def faq():
@@ -274,3 +305,58 @@ def contacts():
 
     <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2798.949796165441!2d9.185730115812493!3d45.450667779100726!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4786c405ae6543c9%3A0xf2bb2313b36af88c!2sVia%20Guglielmo%20R%C3%B6ntgen%2C%201%2C%2020136%20Milano%20MI!5e0!3m2!1sit!2sit!4v1569325279433!5m2!1sit!2sit" frameborder="0" style="border:0; width: 100%; height: 312px;" allowfullscreen></iframe>
     """
+
+
+def analysis(outputs):
+
+    df, meta_data = outputs
+
+    st.subheader("Results")
+    st.markdown(
+        """
+    Wordify successfully run and you can now look at the results before downloading the wordified file.
+    In particular, you can use the slider to filter only those words that have a `Score` above (>=) a certain threshold.
+    For meaningful results, we suggest keeping the threshold to 0.25.
+    """
+    )
+
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        threshold = st.slider(
+            "Select threshold",
+            min_value=0.0,
+            max_value=1.0,
+            step=0.01,
+            value=0.25,
+            help="To return everything, select 0.",
+        )
+        subset_df = df.loc[df["Score"] >= threshold]
+        st.write(subset_df)
+
+    with col2:
+        st.markdown("**Some info about your data**")
+        st.markdown(
+            f"""
+            Your input file contained {meta_data["n_instances"]:,} rows and 
+            Wordify took {meta_data["time"]:,} seconds to run.
+            
+            The total number of n-grams Wordify considered is {meta_data["vocab_size"]:,}.
+            With the current selected threshold on the `Score` (>={threshold}) the output contains {subset_df["Word"].nunique():,}
+            unique n-grams.
+            """
+        )
+
+        with st.expander("Vocabulary"):
+            st.markdown(
+                "The table below shows all candidate n-grams that Wordify considered"
+            )
+            st.write(meta_data["vocabulary"])
+
+        with st.expander("Labels"):
+            st.markdown(
+                "The table below summarizes the labels that your file contained"
+            )
+            st.write(meta_data["labels"])
+
+    return subset_df

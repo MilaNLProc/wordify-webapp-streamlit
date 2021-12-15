@@ -1,6 +1,6 @@
 import streamlit as st
 
-from src.components import faq, footer, form, presentation
+from src.components import faq, footer, form, presentation, analysis
 from src.utils import convert_df, get_logo, read_file
 
 # app configs
@@ -41,16 +41,24 @@ if not uploaded_fl:
     faq()
 else:
     df = read_file(uploaded_fl)
-    new_df = form(df)
-    if new_df is not None:
-        payload = convert_df(new_df)
+    outputs = form(df)
+
+    # change or create session state
+    if outputs is not None or "outputs" not in st.session_state:
+        st.session_state["outputs"] = outputs
+
+    # when procedure is performed
+    if st.session_state["outputs"] is not None:
+
+        df = analysis(st.session_state["outputs"])
+
+        payload = convert_df(df)
         st.download_button(
             label="Download data as CSV",
             data=payload,
             file_name="wordify_results.csv",
             mime="text/csv",
         )
-
 
 # footer
 footer()

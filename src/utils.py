@@ -68,7 +68,12 @@ def plot_labels_prop(data: pd.DataFrame, label_column: str):
 
         return
 
-    source = data[label_column].value_counts().reset_index().rename(columns={"index": "Labels", label_column: "Counts"})
+    source = (
+        data[label_column]
+        .value_counts()
+        .reset_index()
+        .rename(columns={"index": "Labels", label_column: "Counts"})
+    )
     source["Props"] = source["Counts"] / source["Counts"].sum()
     source["Proportions"] = (source["Props"].round(3) * 100).map("{:,.2f}".format) + "%"
 
@@ -81,7 +86,9 @@ def plot_labels_prop(data: pd.DataFrame, label_column: str):
         )
     )
 
-    text = bars.mark_text(align="center", baseline="middle", dy=15).encode(text="Proportions:O")
+    text = bars.mark_text(align="center", baseline="middle", dy=15).encode(
+        text="Proportions:O"
+    )
 
     return (bars + text).properties(height=300)
 
@@ -93,7 +100,9 @@ def plot_nchars(data: pd.DataFrame, text_column: str):
         alt.Chart(source)
         .mark_bar()
         .encode(
-            alt.X(f"{text_column}:Q", bin=True, axis=alt.Axis(title="# chars per text")),
+            alt.X(
+                f"{text_column}:Q", bin=True, axis=alt.Axis(title="# chars per text")
+            ),
             alt.Y("count()", axis=alt.Axis(title="")),
         )
     )
@@ -103,7 +112,11 @@ def plot_nchars(data: pd.DataFrame, text_column: str):
 
 def plot_score(data: pd.DataFrame, label_col: str, label: str):
 
-    source = data.loc[data[label_col] == label].sort_values("score", ascending=False).head(100)
+    source = (
+        data.loc[data[label_col] == label]
+        .sort_values("score", ascending=False)
+        .head(100)
+    )
 
     plot = (
         alt.Chart(source)
