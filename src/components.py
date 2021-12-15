@@ -2,7 +2,7 @@ import streamlit as st
 import time
 import pandas as pd
 
-from src.configs import Languages, PreprocessingConfigs, SupportedFiles
+from src.configs import Languages, PreprocessingConfigs, SupportedFiles, ColumnNames
 from src.preprocessing import PreprocessingPipeline
 from src.wordifier import input_transform, output_transform, wordifier
 from src.utils import get_col_indices
@@ -113,7 +113,9 @@ def form(df):
 
             # prepare input
             with st.spinner("Step 2/4: Preparing inputs"):
-                input_dict = input_transform(df[text_column], df[label_column])
+                input_dict = input_transform(
+                    df[ColumnNames.PROCESSED_TEXT.value], df[label_column]
+                )
 
             # wordify
             with st.spinner("Step 3/4: Wordifying"):

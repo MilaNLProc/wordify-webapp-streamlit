@@ -23,9 +23,9 @@ def normalize_acronyms(t: str) -> str:
     return _re_normalize_acronyms.sub(t.translate(str.maketrans("", "", string.punctuation)).upper(), t)
 
 
-_re_non_word = re.compile(r"\W")
+_re_non_word = re.compile(r"[^A-Za-z]+")
 def remove_non_word(t: str) -> str:
-    "Removes non-words characters from the text using the regex `\W`"
+    "Removes non-words characters and digits from the text using the regex `[^A-Za-z]+`"
     return _re_non_word.sub(" ", t)
 
 
@@ -50,6 +50,11 @@ def normalize_repeating_words(t: str) -> str:
         return c
 
     return _re_wrep.sub(_replace_wrep, t)
+
+
+_re_remove_numbers = re.compile(r"\d+")
+def remove_numbers(t: str) -> str:
+    return _re_remove_numbers.sub(" ", t)
 
 
 def lowercase(t: str) -> str:
@@ -88,21 +93,20 @@ class PreprocessingPipeline:
         lemmatization_step: Optional[str],
         post_steps: Optional[List[str]],
     ):
+
         self.language = language
         self.pre_steps = pre_steps
         self.lemmatization_step = lemmatization_step
         self.post_steps = post_steps
 
-        self.nlp = spacy.load(Languages[language].value, disable=["parser", "ner"])
-        self.pre = (
-            self.make_pre_post_component(self.pre_steps) if self.pre_steps else identity
-        )
-        self.post = (
-            self.make_pre_post_component(self.post_steps)
-            if self.post_steps
+        self.nlp = (
+            spacy.load(Languages[language].value, disable=["parser", "ner"])
+            if self.lemmatization_step != "Disable lemmatizer"
             else identity
         )
-        self.lemma = self.lemmatization_component()[self.lemmatization_step]
+        self.pre = self.make_pipe_component(self.pre_steps)
+        self.post = self.make_pipe_component(self.post_steps)
+        self.lemma = self.lemmatization_component().get(self.lemmatization_step)
 
     # def apply_multiproc(fn, series):
     #     with mp.Pool(mp.cpu_count()) as pool:
@@ -144,9 +148,9 @@ class PreprocessingPipeline:
 
     #     return series
 
-    def make_pre_post_component(self, steps: Optional[List[str]]) -> Optional[Callable]:
+    def make_pipe_component(self, steps: Optional[List[str]]) -> Optional[Callable]:
         if not steps:
-            return
+            return identity
         components = [self.pipeline_components()[step] for step in steps]
 
         return make_pipeline(*components)
@@ -176,6 +180,7 @@ class PreprocessingPipeline:
                 ("remove_html_tags", remove.html_tags),
                 ("remove_punctuation", remove.punctuation),
                 ("remove_non_words", remove_non_word),
+                ("remove_numbers", remove_numbers),
                 ("normalize_useless_spaces", normalize_useless_spaces),
                 ("normalize_repeating_chars", normalize_repeating_chars),
                 ("normalize_repeating_words", normalize_repeating_words),

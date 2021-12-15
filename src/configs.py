@@ -6,6 +6,7 @@ import pandas as pd
 class ColumnNames(Enum):
     LABEL = "label"
     TEXT = "text"
+    PROCESSED_TEXT = "processed_text"
 
 
 class ModelConfigs(Enum):
@@ -24,9 +25,9 @@ class InputTransformConfigs(Enum):
 
 
 class PreprocessingConfigs(Enum):
-    DEFAULT_PRE = [1, 3, 5, 15, 21, 22, 18, 19, 0, 20, -1]
+    DEFAULT_PRE = [1, 14, 2, 3, 4, 21, 23, 22, 5, 24]
     DEFAULT_LEMMA = 1
-    DEFAULT_POST = [20, -1]
+    DEFAULT_POST = [0, 17, 15, 19, 23, 22, 21, 24]
 
 
 class Languages(Enum):
