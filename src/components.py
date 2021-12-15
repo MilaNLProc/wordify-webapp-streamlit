@@ -3,6 +3,7 @@ import streamlit as st
 from src.configs import Languages, PreprocessingConfigs, SupportedFiles
 from src.preprocessing import PreprocessingPipeline
 from src.wordifier import input_transform, output_transform, wordifier
+from src.utils import get_col_indices
 
 
 def form(df):
@@ -11,16 +12,18 @@ def form(df):
         with col1:
 
             cols = [""] + df.columns.tolist()
+            text_index, label_index = get_col_indices(cols)
+
             label_column = st.selectbox(
                 "Select label column",
                 cols,
-                index=0,
+                index=label_index,
                 help="Select the column containing the labels",
             )
             text_column = st.selectbox(
                 "Select text column",
                 cols,
-                index=0,
+                index=text_index,
                 help="Select the column containing the text",
             )
             language = st.selectbox(
@@ -37,16 +40,12 @@ def form(df):
             pre_steps = st.multiselect(
                 "Select pre-lemmatization processing steps (ordered)",
                 options=steps_options,
-                default=[
-                    steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value
-                ],
+                default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value],
                 format_func=lambda x: x.replace("_", " ").title(),
                 help="Select the processing steps to apply before the text is lemmatized",
             )
 
-            lammatization_options = list(
-                PreprocessingPipeline.lemmatization_component().keys()
-            )
+            lammatization_options = list(PreprocessingPipeline.lemmatization_component().keys())
             lemmatization_step = st.selectbox(
                 "Select lemmatization",
                 options=lammatization_options,
@@ -57,9 +56,7 @@ def form(df):
             post_steps = st.multiselect(
                 "Select post-lemmatization processing steps (ordered)",
                 options=steps_options,
-                default=[
-                    steps_options[i] for i in PreprocessingConfigs.DEFAULT_POST.value
-                ],
+                default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_POST.value],
                 format_func=lambda x: x.replace("_", " ").title(),
                 help="Select the processing steps to apply after the text is lemmatized",
             )
@@ -70,9 +67,7 @@ def form(df):
 
             # preprocess
             with st.spinner("Step 1/4: Preprocessing text"):
-                pipe = PreprocessingPipeline(
-                    language, pre_steps, lemmatization_step, post_steps
-                )
+                pipe = PreprocessingPipeline(language, pre_steps, lemmatization_step, post_steps)
                 df = pipe.vaex_process(df, text_column)
 
             # prepare input
@@ -86,14 +81,6 @@ def form(df):
             # prepare output
             with st.spinner("Step 4/4: Preparing outputs"):
                 new_df = output_transform(pos, neg)
-
-            # col1, col2, col3 = st.columns(3)
-            # with col1:
-            #     st.metric("Total number of words processed", 3, delta_color="normal")
-            # with col2:
-            #     st.metric("Texts processed", 3, delta_color="normal")
-            # with col3:
-            #     st.metric("Texts processed", 3, delta_color="normal")
 
             return new_df
 
@@ -122,6 +109,15 @@ def faq():
             f"""
             We currently support {", ".join([i.name for i in SupportedFiles])}.
             """
+        )
+
+    with st.expander("Do I need to preprocess my data?"):
+        st.markdown(
+            """
+            No, there is no need to preprocess your text, we will take of it. 
+            However, if you wish to do so, turn off preprocessing in the `Advanced
+            Settings` in the interactive UI.
+        """
         )
 
     with st.expander("What languages are supported?"):
@@ -202,6 +198,19 @@ def presentation():
         """
     )
 
+    st.subheader("Quickstart")
+    st.markdown(
+        """
+        - There is no need to preprocess your text, we will take care of it. However, if you wish to
+        do so, turn off preprocessing in the `Advanced Settings` in the interactive UI.
+
+        - We expect a file with two columns: `label` with the labels and `text` with the texts (the names are case insensitive). If
+        you provide a file following this naming convention, Wordify will automatically select the
+        correct columns. However, if you wish to use a different nomenclature, you will be asked to
+        provide the column names in the interactive UI.
+        """
+    )
+
     st.subheader("Input format")
     st.markdown(
         """
@@ -224,7 +233,18 @@ def presentation():
         - `Score`: the wordify score, between 0 and 1, of how important is `Word` to discrimitate `Label`
         - `Label`: the label that `Word` is discriminating
         - `Correlation`: how `Word` is correlated with `Label` (e.g., "negative" means that if `Word` is present in the text then the label is less likely to be `Label`)
+
+        for example
         """
+    )
+
+    st.table(
+        {
+            "Word": ["good", "awful", "bad service", "etc"],
+            "Score": ["0.52", "0.49", "0.35", "etc"],
+            "Label": ["Good", "Bad", "Good", "etc"],
+            "Correlation": ["positive", "positive", "negative", "etc"],
+        }
     )
 
 

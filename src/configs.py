@@ -3,6 +3,11 @@ from enum import Enum
 import pandas as pd
 
 
+class ColumnNames(Enum):
+    LABEL = "label"
+    TEXT = "text"
+
+
 class ModelConfigs(Enum):
     NUM_ITERS = 500
     SELECTION_THRESHOLD = 0.0
