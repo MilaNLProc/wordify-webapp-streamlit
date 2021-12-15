@@ -25,6 +25,7 @@ def normalize_acronyms(t: str) -> str:
 
 _re_non_word = re.compile(r"\W")
 def remove_non_word(t: str) -> str:
+    "Removes non-words characters from the text using the regex `\W`"
     return _re_non_word.sub(" ", t)
 
 
@@ -52,6 +53,7 @@ def normalize_repeating_words(t: str) -> str:
 
 
 def lowercase(t: str) -> str:
+    "Lowercases the text"
     return t.lower()
 
 

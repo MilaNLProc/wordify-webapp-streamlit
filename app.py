@@ -1,6 +1,6 @@
 import streamlit as st
 
-from src.components import faq, footer, form, presentation, analysis
+from src.components import faq, footer, form, presentation, analysis, docs
 from src.utils import convert_df, get_logo, read_file
 
 # app configs
@@ -42,6 +42,7 @@ if not uploaded_fl:
 else:
     df = read_file(uploaded_fl)
     outputs = form(df)
+    docs()
 
     # change or create session state
     if outputs is not None or "outputs" not in st.session_state:

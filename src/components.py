@@ -8,6 +8,23 @@ from src.wordifier import input_transform, output_transform, wordifier
 from src.utils import get_col_indices
 
 
+def docs():
+    steps_options = list(PreprocessingPipeline.pipeline_components().keys())
+
+    with st.expander("Documentation for the Advanced Options"):
+        component_name = st.selectbox(
+            "Select a processing step to see docs",
+            options=[""] + steps_options,
+            index=1,
+            format_func=lambda x: x.replace("_", " ").title(),
+            help="Select a processing step to see the relative documentation",
+        )
+
+        pipe_component = PreprocessingPipeline.pipeline_components().get(component_name)
+        if pipe_component is not None:
+            st.help(pipe_component)
+
+
 def form(df):
     st.subheader("Parameters")
     with st.form("Wordify form"):
@@ -43,6 +60,7 @@ def form(df):
 
             if not disable_preprocessing:
                 steps_options = list(PreprocessingPipeline.pipeline_components().keys())
+
                 pre_steps = st.multiselect(
                     "Select pre-lemmatization processing steps (ordered)",
                     options=steps_options,
