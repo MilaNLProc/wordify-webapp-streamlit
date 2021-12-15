@@ -19,22 +19,22 @@ from .configs import Languages
 # and [here](https://textacy.readthedocs.io/en/latest/api_reference/preprocessing.html)
 # fmt: off
 _re_normalize_acronyms = re.compile(r"(?:[a-zA-Z]\.){2,}")
-def normalize_acronyms(t):
+def normalize_acronyms(t: str) -> str:
     return _re_normalize_acronyms.sub(t.translate(str.maketrans("", "", string.punctuation)).upper(), t)
 
 
 _re_non_word = re.compile(r"\W")
-def remove_non_word(t):
+def remove_non_word(t: str) -> str:
     return _re_non_word.sub(" ", t)
 
 
 _re_space = re.compile(r" {2,}")
-def normalize_useless_spaces(t):
+def normalize_useless_spaces(t: str) -> str:
     return _re_space.sub(" ", t)
 
 
 _re_rep = re.compile(r"(\S)(\1{2,})")
-def normalize_repeating_chars(t):
+def normalize_repeating_chars(t: str) -> str:
     def _replace_rep(m):
         c, cc = m.groups()
         return c
@@ -43,7 +43,7 @@ def normalize_repeating_chars(t):
 
 
 _re_wrep = re.compile(r"(?:\s|^)(\w+)\s+((?:\1\s+)+)\1(\s|\W|$)")
-def normalize_repeating_words(t):
+def normalize_repeating_words(t: str) -> str:
     def _replace_wrep(m):
         c, cc, e = m.groups()
         return c
@@ -92,11 +92,10 @@ class PreprocessingPipeline:
         self.post = self.make_pre_post_component(self.post_steps)
         self.lemma = self.lemmatization_component()[self.lemmatization_step]
 
-    def apply_multiproc(fn, series):
-        with mp.Pool(mp.cpu_count()) as pool:
-            new_series = pool.map(fn, series)
-
-        return new_series
+    # def apply_multiproc(fn, series):
+    #     with mp.Pool(mp.cpu_count()) as pool:
+    #         new_series = pool.map(fn, series)
+    #     return new_series
 
     def vaex_process(self, df: DataFrame, text_column: str) -> DataFrame:
         def fn(t):
@@ -106,8 +105,9 @@ class PreprocessingPipeline:
         vdf["processed_text"] = vdf.apply(
             fn, arguments=[vdf[text_column]], vectorize=False
         )
+        df = vdf.to_pandas_df()
 
-        return vdf.to_pandas_df()
+        return df
 
     def __call__(self, series: Series) -> Series:
         if self.pre:
