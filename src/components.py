@@ -7,25 +7,25 @@ from src.utils import get_col_indices
 
 
 def form(df):
-    with st.form("my_form"):
-        col1, col2 = st.columns([1, 2])
+    with st.form("Wordify form"):
+        col1, col2, col3 = st.columns(3)
+        cols = [""] + df.columns.tolist()
+        text_index, label_index = get_col_indices(cols)
         with col1:
-
-            cols = [""] + df.columns.tolist()
-            text_index, label_index = get_col_indices(cols)
-
             label_column = st.selectbox(
                 "Select label column",
                 cols,
                 index=label_index,
                 help="Select the column containing the labels",
             )
+        with col2:
             text_column = st.selectbox(
                 "Select text column",
                 cols,
                 index=text_index,
                 help="Select the column containing the text",
             )
+        with col3:
             language = st.selectbox(
                 "Select language",
                 [i.name for i in Languages],
@@ -35,41 +35,45 @@ def form(df):
                 """,
             )
 
-        with col2:
-            steps_options = list(PreprocessingPipeline.pipeline_components().keys())
-            pre_steps = st.multiselect(
-                "Select pre-lemmatization processing steps (ordered)",
-                options=steps_options,
-                default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value],
-                format_func=lambda x: x.replace("_", " ").title(),
-                help="Select the processing steps to apply before the text is lemmatized",
-            )
+        with st.expander("Advanced Options"):
+            disable_preprocessing = st.checkbox("Disable Preprocessing", False)
 
-            lammatization_options = list(PreprocessingPipeline.lemmatization_component().keys())
-            lemmatization_step = st.selectbox(
-                "Select lemmatization",
-                options=lammatization_options,
-                index=PreprocessingConfigs.DEFAULT_LEMMA.value,
-                help="Select lemmatization procedure",
-            )
+            if not disable_preprocessing:
+                steps_options = list(PreprocessingPipeline.pipeline_components().keys())
+                pre_steps = st.multiselect(
+                    "Select pre-lemmatization processing steps (ordered)",
+                    options=steps_options,
+                    default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value],
+                    format_func=lambda x: x.replace("_", " ").title(),
+                    help="Select the processing steps to apply before the text is lemmatized",
+                )
 
-            post_steps = st.multiselect(
-                "Select post-lemmatization processing steps (ordered)",
-                options=steps_options,
-                default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_POST.value],
-                format_func=lambda x: x.replace("_", " ").title(),
-                help="Select the processing steps to apply after the text is lemmatized",
-            )
+                lammatization_options = list(PreprocessingPipeline.lemmatization_component().keys())
+                lemmatization_step = st.selectbox(
+                    "Select lemmatization",
+                    options=lammatization_options,
+                    index=PreprocessingConfigs.DEFAULT_LEMMA.value,
+                    help="Select lemmatization procedure",
+                )
+
+                post_steps = st.multiselect(
+                    "Select post-lemmatization processing steps (ordered)",
+                    options=steps_options,
+                    default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_POST.value],
+                    format_func=lambda x: x.replace("_", " ").title(),
+                    help="Select the processing steps to apply after the text is lemmatized",
+                )
 
         # Every form must have a submit button.
         submitted = st.form_submit_button("Submit")
         if submitted:
 
             # preprocess
-            with st.spinner("Step 1/4: Preprocessing text"):
-                pipe = PreprocessingPipeline(language, pre_steps, lemmatization_step, post_steps)
-                df = pipe.vaex_process(df, text_column)
-
+            if not disable_preprocessing:
+                with st.spinner("Step 1/4: Preprocessing text"):
+                    pipe = PreprocessingPipeline(language, pre_steps, lemmatization_step, post_steps)
+                    df = pipe.vaex_process(df, text_column)
+                
             # prepare input
             with st.spinner("Step 2/4: Preparing inputs"):
                 input_dict = input_transform(df[text_column], df[label_column])
