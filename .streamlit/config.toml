@@ -5,3 +5,8 @@ maxUploadSize = 10
 
 [browser]
 gatherUsageStats = false
+
+[theme]
+base="light"
+primaryColor="#05468a"
+secondaryBackgroundColor="#d9e3ed"
