@@ -1,11 +1,12 @@
-import streamlit as st
 import time
-import pandas as pd
 
-from src.configs import Languages, PreprocessingConfigs, SupportedFiles, ColumnNames
+import pandas as pd
+import streamlit as st
+
+from src.configs import ColumnNames, Languages, PreprocessingConfigs, SupportedFiles
 from src.preprocessing import PreprocessingPipeline
-from src.wordifier import input_transform, output_transform, wordifier
 from src.utils import get_col_indices
+from src.wordifier import input_transform, output_transform, wordifier
 
 
 def docs():
@@ -78,7 +79,7 @@ def form(df):
                     "Select lemmatization",
                     options=lammatization_options,
                     index=PreprocessingConfigs.DEFAULT_LEMMA.value,
-                    help="Select lemmatization procedure",
+                    help="Select lemmatization procedure. This is automatically disabled when the selected language is Chinese or MultiLanguage.",
                 )
 
                 post_steps = st.multiselect(
@@ -98,6 +99,11 @@ def form(df):
 
             start_time = time.time()
 
+            # warnings about inputs
+            language_specific_warnings(
+                pre_steps, post_steps, lemmatization_step, language
+            )
+
             # preprocess
             if not disable_preprocessing:
                 with st.spinner("Step 1/4: Preprocessing text"):
@@ -109,7 +115,10 @@ def form(df):
                 with st.spinner(
                     "Step 1/4: Preprocessing has been disabled - doing nothing"
                 ):
-                    time.sleep(1.5)
+                    df = df.rename(
+                        columns={text_column: ColumnNames.PROCESSED_TEXT.value}
+                    )
+                    time.sleep(1.2)
 
             # prepare input
             with st.spinner("Step 2/4: Preparing inputs"):
@@ -260,6 +269,15 @@ def presentation():
         you provide a file following this naming convention, Wordify will automatically select the
         correct columns. However, if you wish to use a different nomenclature, you will be asked to
         provide the column names in the interactive UI.
+
+        - Maintain a stable connection with the Wordify page until you download the data. If you refresh the page, 
+        a new Wordify session is created and your progress is lost.
+        
+        - Wordify performances depend on the length of the individual texts in your file. The longer the texts, the higher
+        the chance that Wordify considers many n-grams. More n-grams means more data to analyse in each run.
+        We tailored Wordify performance for files of approximately 5'000 lines or 50k n-grams. In such cases we expect a runtime
+        between 90 seconds and 10 minutes. If your file is big, try to apply a stricter preprocessing of the text in the `Advanced Options` section.
+        If this is not enough, please do feel free to reach out to us directly so we can help.
         """
     )
 
@@ -377,3 +395,32 @@ def analysis(outputs):
             st.write(meta_data["labels"])
 
     return subset_df
+
+
+# warning for Chinese and MultiLanguage
+def language_specific_warnings(pre_steps, post_steps, lemmatization_step, language):
+
+    if language in ("MultiLanguage", "Chinese") and (
+        "remove_non_words" in pre_steps or "remove_non_words" in post_steps
+    ):
+        msg = """
+        NOTE: for Chinese and MultiLanguage we automatically substitute `remove_non_words` with
+        `remove_numbers` and `remove_punctuation` to avoid wrong results.
+        """
+        st.info(msg)
+
+    msg = "NOTE: for Chinese and MultiLanguage we turn-off lemmatization automatically."
+    if lemmatization_step == "Spacy lemmatizer (keep stopwords)" and language in (
+        "MultiLanguage",
+        "Chinese",
+    ):
+        st.info(msg)
+
+    elif lemmatization_step == "Spacy lemmatizer (remove stopwords)" and language in (
+        "MultiLanguage",
+        "Chinese",
+    ):
+        st.info(
+            msg
+            + " However we will still remove stopwords since you selected `Spacy lemmatizer (remove stopwords)`."
+        )

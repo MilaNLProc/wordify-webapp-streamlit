@@ -25,7 +25,7 @@ class InputTransformConfigs(Enum):
 
 
 class PreprocessingConfigs(Enum):
-    DEFAULT_PRE = [1, 14, 2, 3, 4, 21, 23, 22, 5, 24]
+    DEFAULT_PRE = [1, 14, 2, 3, 4, 5, 23, 22, 21, 24]
     DEFAULT_LEMMA = 1
     DEFAULT_POST = [0, 17, 15, 19, 23, 22, 21, 24]
 
@@ -39,7 +39,6 @@ class Languages(Enum):
     Dutch = "nl_core_news_sm"
     Portuguese = "pt_core_news_sm"
     French = "fr_core_news_sm"
-    # Chinese = "zh_core_news_sm"
     Danish = "da_core_news_sm"
     # Japanese = "ja_core_news_sm"
     Lithuanian = "lt_core_news_sm"
@@ -48,9 +47,11 @@ class Languages(Enum):
     Romanian = "ro_core_news_sm"
     Russian = "ru_core_news_sm"
     MultiLanguage = "xx_ent_wiki_sm"
+    Chinese = "zh_core_web_sm"
 
 
 class SupportedFiles(Enum):
     xlsx = (lambda x: pd.read_excel(x, dtype=str),)
-    csv = (lambda x: pd.read_csv(x, dtype=str),)
+    tsv = (lambda x: pd.read_csv(x, dtype=str, sep="\t"),)
+    csv = (lambda x: pd.read_csv(x, dtype=str, sep=","),)
     parquet = (lambda x: pd.read_parquet(x),)

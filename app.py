@@ -1,6 +1,7 @@
 import streamlit as st
 
-from src.components import faq, footer, form, presentation, analysis, docs
+from src.components import analysis, docs, faq, footer, form, presentation
+from src.configs import SupportedFiles
 from src.utils import convert_df, get_logo, read_file
 
 # app configs
@@ -25,7 +26,7 @@ st.title("Wordify")
 # file uploader
 uploaded_fl = st.sidebar.file_uploader(
     label="Choose a file",
-    type=["csv", "parquet", "tsv", "xlsx"],
+    type=[i.name for i in SupportedFiles],
     accept_multiple_files=False,
     help="""
         Supported formats:

@@ -3,11 +3,9 @@ import os
 import re
 import string
 from collections import OrderedDict
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
-import pandas as pd
 import spacy
-import streamlit as st
 import vaex
 from pandas.core.frame import DataFrame
 from pandas.core.series import Series
@@ -99,14 +97,10 @@ class PreprocessingPipeline:
         self.lemmatization_step = lemmatization_step
         self.post_steps = post_steps
 
-        self.nlp = (
-            spacy.load(Languages[language].value, disable=["parser", "ner"])
-            if self.lemmatization_step != "Disable lemmatizer"
-            else identity
-        )
-        self.pre = self.make_pipe_component(self.pre_steps)
-        self.post = self.make_pipe_component(self.post_steps)
-        self.lemma = self.lemmatization_component().get(self.lemmatization_step)
+        self.pre = self.make_pipe_component(self.pre_steps, self.language)
+        self.post = self.make_pipe_component(self.post_steps, self.language)
+        self.nlp = self.make_nlp(self.lemmatization_step, self.language)
+        self.lemma = self.make_lemma(self.lemmatization_step, self.language)
 
     # def apply_multiproc(fn, series):
     #     with mp.Pool(mp.cpu_count()) as pool:
@@ -148,12 +142,58 @@ class PreprocessingPipeline:
 
     #     return series
 
-    def make_pipe_component(self, steps: Optional[List[str]]) -> Optional[Callable]:
+    @classmethod
+    def make_pipe_component(cls, steps: Optional[List[str]], language: str) -> Callable:
         if not steps:
             return identity
-        components = [self.pipeline_components()[step] for step in steps]
+
+        elif language in ("MultiLanguage", "Chinese") and "remove_non_words" in steps:
+            idx = steps.index("remove_non_words")
+            steps = (
+                steps[:idx]
+                + ["remove_numbers", "remove_punctuation"]
+                + steps[idx + 1 :]
+            )
+
+        components = [cls.pipeline_components()[step] for step in steps]
 
         return make_pipeline(*components)
+
+    @staticmethod
+    def make_nlp(
+        lemmatization_step: Optional[str], language: str
+    ) -> Union[spacy.language.Language, Callable]:
+        if (
+            lemmatization_step is None
+            or lemmatization_step == "Disable lemmatizer"
+            or (
+                lemmatization_step == "Spacy lemmatizer (keep stopwords)"
+                and language in ("MultiLanguage", "Chinese")
+            )
+        ):
+            return identity
+        return spacy.load(Languages[language].value, disable=["parser", "ner"])
+
+    @classmethod
+    def make_lemma(cls, lemmatization_step: Optional[str], language: str) -> Callable:
+
+        if (
+            lemmatization_step is None
+            or lemmatization_step == "Disable lemmatizer"
+            or (
+                lemmatization_step == "Spacy lemmatizer (keep stopwords)"
+                and language in ("MultiLanguage", "Chinese")
+            )
+        ):
+            return identity
+
+        elif (
+            lemmatization_step == "Spacy lemmatizer (remove stopwords)"
+            and language in ("MultiLanguage", "Chinese")
+        ):
+            return cls.lemmatization_component().get("Remove stopwords")
+
+        return cls.lemmatization_component().get(lemmatization_step)
 
     @staticmethod
     def pipeline_components() -> "OrderedDict[str, Callable]":
@@ -193,7 +233,7 @@ class PreprocessingPipeline:
         return OrderedDict(
             [
                 ("Spacy lemmatizer (keep stopwords)", lemmatize_keep_stopwords),
-                ("Spacy lemmatizer (no stopwords)", lemmatize_remove_stopwords),
+                ("Spacy lemmatizer (remove stopwords)", lemmatize_remove_stopwords),
                 ("Disable lemmatizer", identity),
                 ("Remove stopwords", remove_stopwords),
             ]

@@ -1,12 +1,13 @@
 import base64
 from typing import List, Tuple
-from pandas.core.frame import DataFrame
+
 import streamlit as st
+from pandas.core.frame import DataFrame
 from PIL import Image
 
-# import altair as alt
+from .configs import ColumnNames, SupportedFiles
 
-from .configs import SupportedFiles, ColumnNames
+# import altair as alt
 
 
 def get_col_indices(cols: List) -> Tuple[int, int]:
