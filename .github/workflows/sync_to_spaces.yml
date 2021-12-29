@@ -19,5 +19,5 @@ jobs:
         run: git push https://pietrolesci:$HF_TOKEN@huggingface.co/spaces/pietrolesci/wordify main
       - name: Push to hub MilaNLProc
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN_MILANLPROC }}
-        run: git push https://MilaNLProc:$HF_TOKEN@huggingface.co/spaces/MilaNLProc/Wordify main
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: git push https://pietrolesci:$HF_TOKEN@huggingface.co/spaces/MilaNLProc/Wordify main
