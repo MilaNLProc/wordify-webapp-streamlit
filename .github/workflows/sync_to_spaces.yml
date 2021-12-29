@@ -13,7 +13,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Push to hub
+      - name: Push to hub pietrolesci
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: git push https://pietrolesci:$HF_TOKEN@huggingface.co/spaces/pietrolesci/wordify main
+      - name: Push to hub MilaNLProc
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: git push https://pietrolesci:$HF_TOKEN@huggingface.co/spaces/MilaNLProc/Wordify main
