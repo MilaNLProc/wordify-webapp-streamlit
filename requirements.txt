@@ -5,7 +5,7 @@ scikit-learn==1.0.1
 xlrd==2.0.1
 openpyxl==3.0.9
 watchdog==2.1.6
-vaex==4.6.1
+vaex==4.7.0
 
 # english
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.2.0/en_core_web_sm-3.2.0.tar.gz#egg=en_core_web_sm
