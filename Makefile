@@ -18,4 +18,7 @@ build: ## build the latest image for a project
 ## Deployment
 ########################################################
 run:
-	docker run -d --name $(PROJECT)-${BUILD_TAG}-container -it --rm -p 8501:8501 $(PROJECT):${BUILD_TAG}
+	docker run -d --name $(PROJECT)-${BUILD_TAG}-container -it --rm -p 4321:8501 $(PROJECT):${BUILD_TAG}
+
+stop:
+	docker stop $(PROJECT)-${BUILD_TAG}-container
