@@ -65,16 +65,12 @@ def form(df):
                 pre_steps = st.multiselect(
                     "Select pre-lemmatization processing steps (ordered)",
                     options=steps_options,
-                    default=[
-                        steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value
-                    ],
+                    default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value],
                     format_func=lambda x: x.replace("_", " ").title(),
                     help="Select the processing steps to apply before the text is lemmatized",
                 )
 
-                lammatization_options = list(
-                    PreprocessingPipeline.lemmatization_component().keys()
-                )
+                lammatization_options = list(PreprocessingPipeline.lemmatization_component().keys())
                 lemmatization_step = st.selectbox(
                     "Select lemmatization",
                     options=lammatization_options,
@@ -85,10 +81,7 @@ def form(df):
                 post_steps = st.multiselect(
                     "Select post-lemmatization processing steps (ordered)",
                     options=steps_options,
-                    default=[
-                        steps_options[i]
-                        for i in PreprocessingConfigs.DEFAULT_POST.value
-                    ],
+                    default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_POST.value],
                     format_func=lambda x: x.replace("_", " ").title(),
                     help="Select the processing steps to apply after the text is lemmatized",
                 )
@@ -100,31 +93,21 @@ def form(df):
             start_time = time.time()
 
             # warnings about inputs
-            language_specific_warnings(
-                pre_steps, post_steps, lemmatization_step, language
-            )
+            language_specific_warnings(pre_steps, post_steps, lemmatization_step, language)
 
             # preprocess
             if not disable_preprocessing:
                 with st.spinner("Step 1/4: Preprocessing text"):
-                    pipe = PreprocessingPipeline(
-                        language, pre_steps, lemmatization_step, post_steps
-                    )
+                    pipe = PreprocessingPipeline(language, pre_steps, lemmatization_step, post_steps)
                     df = pipe.vaex_process(df, text_column)
             else:
-                with st.spinner(
-                    "Step 1/4: Preprocessing has been disabled - doing nothing"
-                ):
-                    df = df.rename(
-                        columns={text_column: ColumnNames.PROCESSED_TEXT.value}
-                    )
+                with st.spinner("Step 1/4: Preprocessing has been disabled - doing nothing"):
+                    df = df.rename(columns={text_column: ColumnNames.PROCESSED_TEXT.value})
                     time.sleep(1.2)
 
             # prepare input
             with st.spinner("Step 2/4: Preparing inputs"):
-                input_dict = input_transform(
-                    df[ColumnNames.PROCESSED_TEXT.value], df[label_column]
-                )
+                input_dict = input_transform(df[ColumnNames.PROCESSED_TEXT.value], df[label_column])
 
             # wordify
             with st.spinner("Step 3/4: Wordifying"):
@@ -144,6 +127,168 @@ def form(df):
             }
 
             return new_df, meta_data
+
+
+def presentation():
+    st.markdown(
+        """
+        Wordify makes it easy to identify words that discriminate categories in textual data.
+        It was proposed by Dirk Hovy, Shiri Melumad, and Jeffrey J Inman in 
+        [Wordify: A Tool for Discovering and Differentiating Consumer Vocabularies](https://academic.oup.com/jcr/article/48/3/394/6199426).
+        
+        :point_left: Start by uploading a file. *Once you upload the file, __Wordify__ will
+        show an interactive UI*.
+        """
+    )
+
+    st.subheader("Quickstart")
+    st.markdown(
+        """
+        - There is no need to preprocess your text, we will take care of it. However, if you wish to
+        do so, turn off preprocessing in the `Advanced Settings` in the interactive UI.
+
+        - We expect a file with two columns: `label` with the labels and `text` with the texts (the names are case insensitive). If
+        you provide a file following this naming convention, Wordify will automatically select the
+        correct columns. However, if you wish to use a different nomenclature, you will be asked to
+        provide the column names in the interactive UI.
+
+        - Maintain a stable connection with the Wordify page until you download the data. If you refresh the page, 
+        a new Wordify session is created and your progress is lost.
+        
+        - Wordify performances depend on the length of the individual texts in your file. The longer the texts, the higher
+        the chance that Wordify considers many n-grams. More n-grams means more data to analyse in each run.
+        We tailored Wordify performance for files of approximately 5'000 lines or 50k n-grams. In such cases we expect a runtime
+        between 90 seconds and 10 minutes. If your file is big, try to apply a stricter preprocessing of the text in the `Advanced Options` section.
+        If this is not enough, please do feel free to reach out to us directly so we can help.
+        """
+    )
+
+    how_to_use()
+    how_it_works()
+
+
+def how_to_use():
+    with st.expander("How to use Wordify"):
+
+        st.subheader("Input format")
+        st.markdown(
+            """
+            Please note that your file must have a column with the texts and a column with the labels,
+            for example
+            """
+        )
+        st.table(
+            {
+                "text": ["A review", "Another review", "Yet another one", "etc"],
+                "label": ["Good", "Bad", "Good", "etc"],
+            }
+        )
+
+        st.subheader("Output format")
+        st.markdown(
+            """
+            As a result of the process, you will get a file containing 4 columns:
+            - `Word`: the n-gram (i.e., a word or a concatenation of words) considered
+            - `Score`: the wordify score, between 0 and 1, of how important is `Word` to discrimitate `Label`
+            - `Label`: the label that `Word` is discriminating
+            - `Correlation`: how `Word` is correlated with `Label` (e.g., "negative" means that if `Word` is present in the text then the label is less likely to be `Label`)
+
+            for example
+            """
+        )
+
+        st.table(
+            {
+                "Word": ["good", "awful", "bad service", "etc"],
+                "Score": ["0.52", "0.49", "0.35", "etc"],
+                "Label": ["Good", "Bad", "Good", "etc"],
+                "Correlation": ["positive", "positive", "negative", "etc"],
+            }
+        )
+
+
+def how_it_works():
+    table2 = pd.DataFrame(
+        {
+            "Text": [
+                "Spice light wine",
+                "Wine oak heavy",
+                "Chardonnay buttery light",
+                "Wine light cherry",
+                "Chardonnay wine oak buttery",
+            ],
+            "Label": ["Italy", "United States", "United States", "Italy", "United States"],
+        }
+    )
+
+    table3 = pd.DataFrame(
+        {
+            "Model": [1, 2, 3, 4],
+            "Buttery": [0.32, 0, 0, 0],
+            "Chardonnay": [3.78, 0, 0, 0],
+            "Cherry": [-2.49, 0, 0, -6.2],
+            "Heavy": [0, 3.62, 0, 0],
+            "Light": [-1.72, -4.38, 0, 0],
+            "Oak": [0, 0, 0, 0],
+            "Spice": [-2.49, 0, -6.2, 0],
+            "Wine": [0, 0, 0, 0],
+        },
+        dtype=str,
+    )
+
+    table4 = pd.DataFrame(
+        {
+            "Coefficient valence": ["positive", "negative"],
+            "Buttery": [0.25, 0],
+            "Chardonnay": [0.25, 0],
+            "Cherry": [0, 0.5],
+            "Heavy": [0.25, 0],
+            "Light": [0, 0.5],
+            "Oak": [0, 0],
+            "Spice": [0, 0.5],
+            "Wine": [0, 0],
+        },
+        dtype=str,
+    )
+
+    with st.expander("How Wordify works: an illustrative example"):
+        st.markdown(
+            f"""
+            To provide an intuitive example of how Wordify works, imagine we have the following five documents with hypothetical
+            descriptions of wines from the United States and Italy listed in table 2 (preprocessed to remove noise words).
+            """
+        )
+        st.caption("Table 2: Descriptions of wines from the USA and Italy.")
+        st.table(table2)
+
+        st.markdown(
+            """
+            Wordify now draws, say, four independent samples from this data, for example: `(1,3,4,5)`, `(1,2,2,4)`, `(1,1,2,3)`, and `(2,3,4,4)`.
+            We fit an L1-regularized Logistic Regression on each, with the United States as target class. This result in the following sparse
+            vectors of coefficients reported in table 3 (indicators that are not present in a run are listed as 0 here):
+            """
+        )
+        st.caption("Table 3: Coefficients for frequency of indicators in each of the four runs for US wines.")
+        st.table(table3)
+
+        st.markdown(
+            """
+            We can now count for each indicator how many times out of the four runs it received a non-zero coefficient (the magnitude does not matter).
+            We distinguish by positive and negative coefficients, and divide the result by the number of runs (here, four), which yields the final indicators
+            that are positively and negatively correlated with the US wines.
+            """
+        )
+        st.caption("Table 4: Final set of indicators that are positively versus negatively correlated with US wines.")
+        st.table(table4)
+        st.markdown(
+            """
+            The results of table 4 suggest that a wine is likely to be from the United States if its description contains any of the following words: "buttery",
+            "chardonnay", or "heavy", and these words are similarly discriminative. In contrast, a wine is likely to not be from the United States if it contains
+            the words "spice", "light", or "cherry". It is also worth noting that "oak" and "wine", which were present for both Italian and US wines, were ultimately
+            not selected as discriminative indicators of US wines. Finally, we would conduct an analogous analysis with Italy as the target class to determine which
+            indicators are most and least discriminative of Italian wines.
+            """
+        )
 
 
 def faq():
@@ -249,75 +394,6 @@ def faq():
         st.markdown(contacts(), unsafe_allow_html=True)
 
 
-def presentation():
-    st.markdown(
-        """
-        Wordify makes it easy to identify words that discriminate categories in textual data.
-        
-        :point_left: Start by uploading a file. *Once you upload the file, __Wordify__ will
-        show an interactive UI*.
-        """
-    )
-
-    st.subheader("Quickstart")
-    st.markdown(
-        """
-        - There is no need to preprocess your text, we will take care of it. However, if you wish to
-        do so, turn off preprocessing in the `Advanced Settings` in the interactive UI.
-
-        - We expect a file with two columns: `label` with the labels and `text` with the texts (the names are case insensitive). If
-        you provide a file following this naming convention, Wordify will automatically select the
-        correct columns. However, if you wish to use a different nomenclature, you will be asked to
-        provide the column names in the interactive UI.
-
-        - Maintain a stable connection with the Wordify page until you download the data. If you refresh the page, 
-        a new Wordify session is created and your progress is lost.
-        
-        - Wordify performances depend on the length of the individual texts in your file. The longer the texts, the higher
-        the chance that Wordify considers many n-grams. More n-grams means more data to analyse in each run.
-        We tailored Wordify performance for files of approximately 5'000 lines or 50k n-grams. In such cases we expect a runtime
-        between 90 seconds and 10 minutes. If your file is big, try to apply a stricter preprocessing of the text in the `Advanced Options` section.
-        If this is not enough, please do feel free to reach out to us directly so we can help.
-        """
-    )
-
-    st.subheader("Input format")
-    st.markdown(
-        """
-        Please note that your file must have a column with the texts and a column with the labels,
-        for example
-        """
-    )
-    st.table(
-        {
-            "text": ["A review", "Another review", "Yet another one", "etc"],
-            "label": ["Good", "Bad", "Good", "etc"],
-        }
-    )
-
-    st.subheader("Output format")
-    st.markdown(
-        """
-        As a result of the process, you will get a file containing 4 columns:
-        - `Word`: the n-gram (i.e., a word or a concatenation of words) considered
-        - `Score`: the wordify score, between 0 and 1, of how important is `Word` to discrimitate `Label`
-        - `Label`: the label that `Word` is discriminating
-        - `Correlation`: how `Word` is correlated with `Label` (e.g., "negative" means that if `Word` is present in the text then the label is less likely to be `Label`)
-
-        for example
-        """
-    )
-
-    st.table(
-        {
-            "Word": ["good", "awful", "bad service", "etc"],
-            "Score": ["0.52", "0.49", "0.35", "etc"],
-            "Label": ["Good", "Bad", "Good", "etc"],
-            "Correlation": ["positive", "positive", "negative", "etc"],
-        }
-    )
-
-
 def footer():
     st.sidebar.markdown(
         """
@@ -383,15 +459,11 @@ def analysis(outputs):
         )
 
         with st.expander("Vocabulary"):
-            st.markdown(
-                "The table below shows all candidate n-grams that Wordify considered"
-            )
+            st.markdown("The table below shows all candidate n-grams that Wordify considered")
             st.write(meta_data["vocabulary"])
 
         with st.expander("Labels"):
-            st.markdown(
-                "The table below summarizes the labels that your file contained"
-            )
+            st.markdown("The table below summarizes the labels that your file contained")
             st.write(meta_data["labels"])
 
     return subset_df
@@ -421,6 +493,5 @@ def language_specific_warnings(pre_steps, post_steps, lemmatization_step, langua
         "Chinese",
     ):
         st.info(
-            msg
-            + " However we will still remove stopwords since you selected `Spacy lemmatizer (remove stopwords)`."
+            msg + " However we will still remove stopwords since you selected `Spacy lemmatizer (remove stopwords)`."
         )
