@@ -65,12 +65,16 @@ def form(df):
                 pre_steps = st.multiselect(
                     "Select pre-lemmatization processing steps (ordered)",
                     options=steps_options,
-                    default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value],
+                    default=[
+                        steps_options[i] for i in PreprocessingConfigs.DEFAULT_PRE.value
+                    ],
                     format_func=lambda x: x.replace("_", " ").title(),
                     help="Select the processing steps to apply before the text is lemmatized",
                 )
 
-                lammatization_options = list(PreprocessingPipeline.lemmatization_component().keys())
+                lammatization_options = list(
+                    PreprocessingPipeline.lemmatization_component().keys()
+                )
                 lemmatization_step = st.selectbox(
                     "Select lemmatization",
                     options=lammatization_options,
@@ -81,7 +85,10 @@ def form(df):
                 post_steps = st.multiselect(
                     "Select post-lemmatization processing steps (ordered)",
                     options=steps_options,
-                    default=[steps_options[i] for i in PreprocessingConfigs.DEFAULT_POST.value],
+                    default=[
+                        steps_options[i]
+                        for i in PreprocessingConfigs.DEFAULT_POST.value
+                    ],
                     format_func=lambda x: x.replace("_", " ").title(),
                     help="Select the processing steps to apply after the text is lemmatized",
                 )
@@ -93,21 +100,31 @@ def form(df):
             start_time = time.time()
 
             # warnings about inputs
-            language_specific_warnings(pre_steps, post_steps, lemmatization_step, language)
+            language_specific_warnings(
+                pre_steps, post_steps, lemmatization_step, language
+            )
 
             # preprocess
             if not disable_preprocessing:
                 with st.spinner("Step 1/4: Preprocessing text"):
-                    pipe = PreprocessingPipeline(language, pre_steps, lemmatization_step, post_steps)
+                    pipe = PreprocessingPipeline(
+                        language, pre_steps, lemmatization_step, post_steps
+                    )
                     df = pipe.vaex_process(df, text_column)
             else:
-                with st.spinner("Step 1/4: Preprocessing has been disabled - doing nothing"):
-                    df = df.rename(columns={text_column: ColumnNames.PROCESSED_TEXT.value})
+                with st.spinner(
+                    "Step 1/4: Preprocessing has been disabled - doing nothing"
+                ):
+                    df = df.rename(
+                        columns={text_column: ColumnNames.PROCESSED_TEXT.value}
+                    )
                     time.sleep(1.2)
 
             # prepare input
             with st.spinner("Step 2/4: Preparing inputs"):
-                input_dict = input_transform(df[ColumnNames.PROCESSED_TEXT.value], df[label_column])
+                input_dict = input_transform(
+                    df[ColumnNames.PROCESSED_TEXT.value], df[label_column]
+                )
 
             # wordify
             with st.spinner("Step 3/4: Wordifying"):
@@ -217,7 +234,13 @@ def how_it_works():
                 "Wine light cherry",
                 "Chardonnay wine oak buttery",
             ],
-            "Label": ["Italy", "United States", "United States", "Italy", "United States"],
+            "Label": [
+                "Italy",
+                "United States",
+                "United States",
+                "Italy",
+                "United States",
+            ],
         }
     )
 
@@ -268,7 +291,9 @@ def how_it_works():
             vectors of coefficients reported in table 3 (indicators that are not present in a run are listed as 0 here):
             """
         )
-        st.caption("Table 3: Coefficients for frequency of indicators in each of the four runs for US wines.")
+        st.caption(
+            "Table 3: Coefficients for frequency of indicators in each of the four runs for US wines."
+        )
         st.table(table3)
 
         st.markdown(
@@ -278,7 +303,9 @@ def how_it_works():
             that are positively and negatively correlated with the US wines.
             """
         )
-        st.caption("Table 4: Final set of indicators that are positively versus negatively correlated with US wines.")
+        st.caption(
+            "Table 4: Final set of indicators that are positively versus negatively correlated with US wines."
+        )
         st.table(table4)
         st.markdown(
             """
@@ -459,11 +486,15 @@ def analysis(outputs):
         )
 
         with st.expander("Vocabulary"):
-            st.markdown("The table below shows all candidate n-grams that Wordify considered")
+            st.markdown(
+                "The table below shows all candidate n-grams that Wordify considered"
+            )
             st.write(meta_data["vocabulary"])
 
         with st.expander("Labels"):
-            st.markdown("The table below summarizes the labels that your file contained")
+            st.markdown(
+                "The table below summarizes the labels that your file contained"
+            )
             st.write(meta_data["labels"])
 
     return subset_df
@@ -493,5 +524,6 @@ def language_specific_warnings(pre_steps, post_steps, lemmatization_step, langua
         "Chinese",
     ):
         st.info(
-            msg + " However we will still remove stopwords since you selected `Spacy lemmatizer (remove stopwords)`."
+            msg
+            + " However we will still remove stopwords since you selected `Spacy lemmatizer (remove stopwords)`."
         )

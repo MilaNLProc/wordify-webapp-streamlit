@@ -1,5 +1,3 @@
-import multiprocessing as mp
-import os
 import re
 import string
 from collections import OrderedDict
@@ -8,7 +6,6 @@ from typing import Callable, List, Optional, Union
 import spacy
 import vaex
 from pandas.core.frame import DataFrame
-from pandas.core.series import Series
 from textacy.preprocessing import make_pipeline, normalize, remove, replace
 
 from .configs import Languages
@@ -118,29 +115,6 @@ class PreprocessingPipeline:
         df = vdf.to_pandas_df()
 
         return df
-
-    # def __call__(self, series: Series) -> Series:
-    #     if self.pre:
-    #         series = series.map(self.pre)
-
-    #     if self.lemma:
-    #         total_steps = len(series) // 100
-    #         res = []
-    #         pbar = st.progress(0)
-    #         for i, doc in enumerate(
-    #             self.nlp.pipe(series, batch_size=500, n_process=os.cpu_count())
-    #         ):
-    #             res.append(self.lemma(doc))
-
-    #             if i % total_steps == 0:
-    #                 pbar.progress(1)
-
-    #         series = pd.Series(res)
-
-    #     if self.post:
-    #         series = series.map(self.post)
-
-    #     return series
 
     @classmethod
     def make_pipe_component(cls, steps: Optional[List[str]], language: str) -> Callable:

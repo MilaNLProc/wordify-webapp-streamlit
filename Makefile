@@ -1,6 +1,7 @@
 # Docker image build info
 PROJECT:=wordify
 BUILD_TAG?=v2.0
+sources = src
 
 ########################################################
 ## Local development
@@ -22,3 +23,10 @@ run:
 
 stop:
 	docker stop $(PROJECT)-${BUILD_TAG}-container
+
+format:
+	isort $(sources)
+	black $(sources)
+
+lint:
+	flake8 $(sources)
