@@ -6,6 +6,7 @@ xlrd==2.0.1
 openpyxl==3.0.9
 watchdog==2.1.6
 vaex==4.7.0
+blake3==0.2.1  # to make vaex work
 
 # english
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.2.0/en_core_web_sm-3.2.0.tar.gz#egg=en_core_web_sm
