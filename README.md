@@ -3,14 +3,27 @@ title: Wordify
 emoji: 🤗
 colorFrom: blue
 colorTo: blue
+python_version: 3.7
 sdk: streamlit
+sdk_version: 1.0
 app_file: app.py
 pinned: false
 ---
 
 
-# To run locally in Docker
-1. Clone this repo
-1. run `make build` to create image
-1. run `make run` to run container and serve the app at localhost:4321
-1. run `make stop` to stop container
+# Run locally without docker
+```bash
+streamlit run app.py
+```
+
+# Run locally in Docker
+```bash
+# create image
+make build
+
+# run container and serve the app at localhost:4321
+make run
+
+# to stop container
+make stop
+```
