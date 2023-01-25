@@ -11,14 +11,26 @@ pinned: false
 ---
 
 
-# Run locally without docker
+# Run without docker
 ```bash
 streamlit run app.py
 ```
 
-# Run locally in Docker
+# Debug in Docker
 ```bash
-# create image
+# create image (if not already present)
+make build
+
+# run container with an interactive shell
+make dev
+
+# (from within the contained) start the app normally
+streamlit run app.py
+```
+
+# Run in Docker
+```bash
+# create image (if not already present)
 make build
 
 # run container and serve the app at localhost:4321
