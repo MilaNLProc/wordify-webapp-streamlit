@@ -1,9 +1,5 @@
 import streamlit as st
 
-from src.components import analysis, docs, faq, footer, form, presentation
-from src.configs import SupportedFiles
-from src.utils import convert_df, get_logo, read_file
-
 # app configs
 st.set_page_config(
     page_title="Wordify",
@@ -14,8 +10,14 @@ st.set_page_config(
         "Get Help": "https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new",
         "Report a Bug": "https://github.com/MilaNLProc/wordify-webapp-streamlit/issues/new",
         "About": "By the __Wordify__ team.",
-    },
+    },  # type: ignore
 )
+
+# HACK: other streamlit complains that `set_page_config` is not the first command
+if True:
+    from src.components import analysis, docs, faq, footer, form, presentation
+    from src.configs import SupportedFiles
+    from src.utils import convert_df, get_logo, read_file
 
 # logo
 st.sidebar.image(get_logo("./assets/logo.png"))

@@ -24,12 +24,12 @@ def get_col_indices(cols: List) -> Tuple[int, int]:
     return text_index, label_index
 
 
-@st.cache
+@st.cache_data
 def get_logo(path: str) -> Image:
     return Image.open(path)
 
 
-@st.experimental_memo
+@st.cache_data
 def read_file(uploaded_file) -> DataFrame:
     file_type = uploaded_file.name.split(".")[-1]
     read_fn = SupportedFiles[file_type].value[0]
@@ -38,7 +38,7 @@ def read_file(uploaded_file) -> DataFrame:
     return df
 
 
-@st.cache
+@st.cache_data
 def convert_df(df: DataFrame) -> bytes:
     # IMPORTANT: Cache the conversion to prevent computation on every rerun
     return df.to_csv(index=False, sep=";").encode("utf-8")

@@ -3,7 +3,7 @@ title: Wordify
 emoji: 🤗
 colorFrom: blue
 colorTo: blue
-python_version: 3.7
+python_version: 3.11
 sdk: streamlit
 sdk_version: 1.17.0
 app_file: app.py

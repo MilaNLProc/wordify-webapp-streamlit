@@ -1,6 +1,6 @@
 # Docker image build info
 PROJECT:=wordify
-BUILD_TAG?=v2.0
+BUILD_TAG?=v2.1
 sources = src
 
 ########################################################
